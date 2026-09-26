@@ -57,22 +57,6 @@
     padding: max(28px, env(safe-area-inset-top,0px)) 24px max(28px, env(safe-area-inset-bottom,0px));
     text-align:center;
   }
-  .eyebrow{
-    font-size:.8rem;
-    letter-spacing:1px;
-    color:var(--muted);
-    margin:0 0 6px;
-    font-weight:400;
-  }
-  .count{
-    font-size:.75rem;
-    color:var(--muted);
-    margin:0 0 40px;
-    min-height:1em;
-    opacity:0;
-    transition:opacity .5s ease;
-  }
-  .count.show{opacity:1;}
   .orb-wrap{
     position:relative;
     width:min(640px, 88vw);
@@ -95,16 +79,6 @@
   }
   #sentence.show{opacity:1; filter:blur(0); transform:scale(1);}
 
-  .hint{
-    margin-top:38px;
-    font-size:.8rem;
-    color:var(--muted);
-    opacity:0;
-    transition:opacity .6s ease .3s;
-    letter-spacing:.3px;
-  }
-  .hint.show{opacity:.8;}
-
   .err{color:#e0a37a; font-size:1rem;}
 
   @media (prefers-reduced-motion: reduce){
@@ -116,12 +90,9 @@
 <canvas id="field"></canvas>
 <div class="nebula" id="nebula"></div>
 <main>
-  <p class="eyebrow">۱۶۳۲ سوال</p>
-  <p class="count" id="count"></p>
   <div class="orb-wrap">
     <p id="sentence"></p>
   </div>
-  <p class="hint" id="hint">برای سوال بعدی، هر جای صفحه رو لمس کن</p>
 </main>
 
 <script>
@@ -215,8 +186,6 @@ requestAnimationFrame(drawFrame);
 /* ---------- sentence data ---------- */
 let sentences = [];
 const sentenceEl = document.getElementById('sentence');
-const countEl = document.getElementById('count');
-const hintEl = document.getElementById('hint');
 const nebulaEl = document.getElementById('nebula');
 let pendingIndex = null;
 let ready = false;
@@ -229,7 +198,6 @@ async function loadSentences(){
     if(!Array.isArray(data) || data.length === 0) throw new Error('empty');
     sentences = data;
     ready = true;
-    hintEl.classList.add('show');
     startWarp();
   }catch(e){
     sentenceEl.innerHTML = '<span class="err">فایل ۱۶۳۲.json پیدا نشد یا نامعتبر است.<br>باید کنار index.html و به‌صورت آرایه‌ای از رشته‌ها باشد.</span>';
@@ -240,7 +208,6 @@ async function loadSentences(){
 function startWarp(){
   if(!ready || warping) return;
   sentenceEl.classList.remove('show');
-  countEl.classList.remove('show');
   nebulaEl.style.opacity = '0.35';
   pendingIndex = Math.floor(Math.random()*sentences.length);
   warping = true;
@@ -249,9 +216,7 @@ function startWarp(){
 
 function onWarpArrived(){
   sentenceEl.textContent = sentences[pendingIndex];
-  countEl.textContent = 'سوال ' + (pendingIndex+1).toLocaleString('fa-IR') + ' از ' + sentences.length.toLocaleString('fa-IR');
   sentenceEl.classList.add('show');
-  countEl.classList.add('show');
   nebulaEl.style.opacity = '1';
 }
 
