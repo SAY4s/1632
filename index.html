@@ -7,7 +7,6 @@
 <style>
   :root{
     --void:#05060f;
-    --deep:#0b0e24;
     --nebula:#3a2a6b;
     --nebula2:#1c3a5e;
     --star:#f3e3b8;
@@ -24,6 +23,9 @@
     font-family:"Vazirmatn","Vazir","IRANSans","Tahoma",sans-serif;
     overflow:hidden;
     position:relative;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
   }
   canvas#field{
     position:fixed;
@@ -42,6 +44,7 @@
       radial-gradient(ellipse 45% 35% at 82% 75%, rgba(28,58,94,.5), transparent 60%),
       radial-gradient(ellipse 60% 45% at 75% 15%, rgba(80,40,90,.3), transparent 65%);
     filter:blur(2px);
+    transition:opacity .5s ease;
   }
   main{
     position:relative;
@@ -66,7 +69,10 @@
     color:var(--muted);
     margin:0 0 40px;
     min-height:1em;
+    opacity:0;
+    transition:opacity .5s ease;
   }
+  .count.show{opacity:1;}
   .orb-wrap{
     position:relative;
     width:min(640px, 88vw);
@@ -83,100 +89,137 @@
     margin:0 auto;
     opacity:0;
     filter:blur(6px);
-    transition:opacity .55s ease, filter .55s ease;
+    transform:scale(.96);
+    transition:opacity .6s ease, filter .6s ease, transform .6s ease;
     text-shadow:0 0 24px rgba(243,227,184,.15);
   }
-  #sentence.show{opacity:1; filter:blur(0);}
+  #sentence.show{opacity:1; filter:blur(0); transform:scale(1);}
 
-  .travel-star{
-    position:fixed;
-    top:0; left:0;
-    width:4px; height:4px;
-    border-radius:50%;
-    background:var(--star-bright);
-    box-shadow:0 0 10px 2px var(--star-bright), 0 0 28px 6px rgba(243,227,184,.5);
-    z-index:5;
-    pointer-events:none;
-    transition:transform .85s cubic-bezier(.2,.7,.2,1), opacity .5s ease .5s, width .85s ease, height .85s ease;
-  }
-
-  button{
+  .hint{
     margin-top:38px;
-    background:transparent;
-    color:var(--star);
-    border:1px solid rgba(243,227,184,.35);
-    padding:11px 28px;
-    border-radius:999px;
-    font-size:.95rem;
-    font-family:inherit;
-    cursor:pointer;
+    font-size:.8rem;
+    color:var(--muted);
+    opacity:0;
+    transition:opacity .6s ease .3s;
     letter-spacing:.3px;
-    transition:background .2s ease, border-color .2s ease, transform .1s ease;
   }
-  button:hover{background:rgba(243,227,184,.08); border-color:rgba(243,227,184,.6);}
-  button:active{transform:scale(.96);}
+  .hint.show{opacity:.8;}
 
-  .err{color:#e0a37a; font-size:1rem; opacity:1 !important; filter:none !important;}
+  .err{color:#e0a37a; font-size:1rem;}
 
   @media (prefers-reduced-motion: reduce){
-    .travel-star{transition:opacity .3s ease;}
     #sentence{transition:opacity .3s ease;}
   }
 </style>
 </head>
 <body>
 <canvas id="field"></canvas>
-<div class="nebula"></div>
+<div class="nebula" id="nebula"></div>
 <main>
   <p class="eyebrow">۱۶۳۲ سوال</p>
   <p class="count" id="count"></p>
   <div class="orb-wrap">
     <p id="sentence"></p>
   </div>
-  <button id="next">سوال بعدی</button>
+  <p class="hint" id="hint">برای سوال بعدی، هر جای صفحه رو لمس کن</p>
 </main>
 
 <script>
-/* ---------- starfield background ---------- */
+/* ---------- starfield / warp canvas ---------- */
 const canvas = document.getElementById('field');
 const ctx = canvas.getContext('2d');
-let W, H, stars = [];
+let W, H, cx, cy, stars = [];
+
+const STAR_COUNT_DIVISOR = 4500;
+
+function makeStar(nearCenter){
+  const ang = Math.random()*Math.PI*2;
+  const dist = (nearCenter ? Math.random()*40 : 40 + Math.random()*Math.max(W,H)*0.7);
+  return {
+    ang, dist,
+    z: 0.35 + Math.random()*0.65,
+    baseA: Math.random()*0.6 + 0.25,
+    phase: Math.random()*Math.PI*2,
+    twSpeed: Math.random()*0.006 + 0.002,
+    r: Math.random()*1.2 + 0.3
+  };
+}
 
 function resize(){
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
-  const count = Math.floor((W*H)/9000);
-  stars = Array.from({length: count}, () => ({
-    x: Math.random()*W,
-    y: Math.random()*H,
-    r: Math.random()*1.3 + 0.3,
-    baseA: Math.random()*0.6 + 0.25,
-    phase: Math.random()*Math.PI*2,
-    speed: Math.random()*0.006 + 0.002
-  }));
+  cx = W/2; cy = H/2;
+  const count = Math.floor((W*H)/STAR_COUNT_DIVISOR);
+  stars = Array.from({length: count}, () => makeStar(false));
 }
 window.addEventListener('resize', resize);
 resize();
 
-function drawStars(t){
-  ctx.clearRect(0,0,W,H);
-  for(const s of stars){
-    const tw = Math.sin(t*s.speed + s.phase)*0.35;
-    const a = Math.max(0, Math.min(1, s.baseA + tw));
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-    ctx.fillStyle = `rgba(243,227,184,${a})`;
-    ctx.fill();
-  }
-  requestAnimationFrame(drawStars);
+let warping = false;
+let warpStart = 0;
+const WARP_DURATION = 900;
+
+function project(s){
+  const scale = 1/s.z;
+  return { x: cx + Math.cos(s.ang)*s.dist*scale, y: cy + Math.sin(s.ang)*s.dist*scale, scale };
 }
-requestAnimationFrame(drawStars);
+
+function drawFrame(t){
+  ctx.fillStyle = 'rgba(5,6,15,1)';
+  ctx.clearRect(0,0,W,H);
+
+  if(warping){
+    const elapsed = t - warpStart;
+    const p = Math.min(1, elapsed / WARP_DURATION);
+    const ease = p*p*(3-2*p);
+    const speed = 0.012 + ease*0.16;
+
+    for(const s of stars){
+      const before = project(s);
+      s.z -= speed;
+      if(s.z <= 0.03){
+        s.z = 1;
+        s.ang = Math.random()*Math.PI*2;
+        s.dist = Math.random()*30;
+      }
+      const after = project(s);
+      const a = Math.min(1, 0.15 + after.scale*0.18);
+      ctx.strokeStyle = `rgba(243,227,184,${a})`;
+      ctx.lineWidth = Math.min(3.5, 0.4 + after.scale*0.5);
+      ctx.beginPath();
+      ctx.moveTo(before.x, before.y);
+      ctx.lineTo(after.x, after.y);
+      ctx.stroke();
+    }
+
+    if(elapsed >= WARP_DURATION){
+      warping = false;
+      for(const s of stars){ s.z = 0.35 + Math.random()*0.65; s.dist = 40 + Math.random()*Math.max(W,H)*0.7; s.ang = Math.random()*Math.PI*2; }
+      onWarpArrived();
+    }
+  } else {
+    for(const s of stars){
+      const tw = Math.sin(t*s.twSpeed + s.phase)*0.35;
+      const a = Math.max(0, Math.min(1, s.baseA + tw));
+      const pos = project(s);
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(243,227,184,${a})`;
+      ctx.fill();
+    }
+  }
+  requestAnimationFrame(drawFrame);
+}
+requestAnimationFrame(drawFrame);
 
 /* ---------- sentence data ---------- */
 let sentences = [];
 const sentenceEl = document.getElementById('sentence');
 const countEl = document.getElementById('count');
-const orbWrap = document.querySelector('.orb-wrap');
+const hintEl = document.getElementById('hint');
+const nebulaEl = document.getElementById('nebula');
+let pendingIndex = null;
+let ready = false;
 
 async function loadSentences(){
   try{
@@ -185,52 +228,35 @@ async function loadSentences(){
     const data = await res.json();
     if(!Array.isArray(data) || data.length === 0) throw new Error('empty');
     sentences = data;
-    countEl.textContent = sentences.length.toLocaleString('fa-IR') + ' سوال';
-    revealNext();
+    ready = true;
+    hintEl.classList.add('show');
+    startWarp();
   }catch(e){
     sentenceEl.innerHTML = '<span class="err">فایل ۱۶۳۲.json پیدا نشد یا نامعتبر است.<br>باید کنار index.html و به‌صورت آرایه‌ای از رشته‌ها باشد.</span>';
     sentenceEl.classList.add('show');
   }
 }
 
-/* ---------- shooting-star reveal ---------- */
-function revealNext(){
-  if(sentences.length === 0) return;
-
+function startWarp(){
+  if(!ready || warping) return;
   sentenceEl.classList.remove('show');
-
-  const rect = orbWrap.getBoundingClientRect();
-  const targetX = rect.left + rect.width/2;
-  const targetY = rect.top + rect.height/2;
-
-  const angle = Math.random()*Math.PI*2;
-  const dist = Math.max(W,H)*0.6;
-  const startX = targetX + Math.cos(angle)*dist;
-  const startY = targetY + Math.sin(angle)*dist;
-
-  const star = document.createElement('div');
-  star.className = 'travel-star';
-  star.style.transform = `translate(${startX}px, ${startY}px)`;
-  document.body.appendChild(star);
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      star.style.transform = `translate(${targetX}px, ${targetY}px)`;
-      star.style.width = '10px';
-      star.style.height = '10px';
-    });
-  });
-
-  setTimeout(() => {
-    const i = Math.floor(Math.random()*sentences.length);
-    sentenceEl.textContent = sentences[i];
-    sentenceEl.classList.add('show');
-    star.style.opacity = '0';
-    setTimeout(() => star.remove(), 600);
-  }, 780);
+  countEl.classList.remove('show');
+  nebulaEl.style.opacity = '0.35';
+  pendingIndex = Math.floor(Math.random()*sentences.length);
+  warping = true;
+  warpStart = performance.now();
 }
 
-document.getElementById('next').addEventListener('click', revealNext);
+function onWarpArrived(){
+  sentenceEl.textContent = sentences[pendingIndex];
+  countEl.textContent = 'سوال ' + (pendingIndex+1).toLocaleString('fa-IR') + ' از ' + sentences.length.toLocaleString('fa-IR');
+  sentenceEl.classList.add('show');
+  countEl.classList.add('show');
+  nebulaEl.style.opacity = '1';
+}
+
+document.body.addEventListener('click', startWarp);
+
 loadSentences();
 </script>
 </body>
