@@ -192,7 +192,7 @@ let ready = false;
 
 async function loadSentences(){
   try{
-    const res = await fetch('1632.json');
+    const res = await fetch('1632.json?t=' + Date.now(), { cache: 'no-store' });
     if(!res.ok) throw new Error('bad status');
     const data = await res.json();
     if(!Array.isArray(data) || data.length === 0) throw new Error('empty');
