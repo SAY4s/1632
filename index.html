@@ -214,7 +214,10 @@ async function loadSentences(){
 
 function startWarp(){
   if(!ready || warping) return;
-  sentenceEl.classList.remove('show');
+  sentenceEl.style.transition = 'opacity .3s ease, filter .3s ease, transform .3s ease';
+  sentenceEl.style.opacity = '0';
+  sentenceEl.style.filter = 'blur(6px)';
+  sentenceEl.style.transform = 'scale(.96)';
   nebulaEl.style.opacity = '0.35';
   pendingIndex = Math.floor(Math.random()*sentences.length);
   for(const s of stars){ s.warpZ0 = s.z; }
@@ -224,8 +227,22 @@ function startWarp(){
 }
 
 function onWarpArrived(){
+  const rawDx = fx - cx, rawDy = fy - cy;
+  const dist = Math.hypot(rawDx, rawDy) || 1;
+  const mag = Math.min(90, dist * 0.4);
+  const dx = (rawDx/dist) * mag;
+  const dy = (rawDy/dist) * mag;
+
   sentenceEl.textContent = sentences[pendingIndex];
-  sentenceEl.classList.add('show');
+  sentenceEl.style.transition = 'none';
+  sentenceEl.style.transform = `translate(${dx}px, ${dy}px) scale(0.85)`;
+  sentenceEl.style.opacity = '0';
+  sentenceEl.style.filter = 'blur(8px)';
+  void sentenceEl.offsetWidth; // force reflow so the transition below actually animates
+  sentenceEl.style.transition = 'opacity .6s ease, filter .6s ease, transform .6s ease';
+  sentenceEl.style.transform = 'translate(0px, 0px) scale(1)';
+  sentenceEl.style.opacity = '1';
+  sentenceEl.style.filter = 'blur(0px)';
   nebulaEl.style.opacity = '1';
 }
 
