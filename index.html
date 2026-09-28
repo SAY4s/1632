@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>1632</title>
+<title>1632Sentence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lalezar&display=swap" rel="stylesheet">
@@ -214,6 +214,7 @@ async function loadSentences(){
 
 function startWarp(){
   if(!ready || warping) return;
+  clearTimeout(autoTimer);
   sentenceEl.style.transition = 'opacity .3s ease, filter .3s ease, transform .3s ease';
   sentenceEl.style.opacity = '0';
   sentenceEl.style.filter = 'blur(6px)';
@@ -227,9 +228,13 @@ function startWarp(){
 }
 
 function onWarpArrived(){
-  const rawDx = fx - cx, rawDy = fy - cy;
+  const rect = orbWrap.getBoundingClientRect();
+  const originX = rect.left + rect.width/2;
+  const originY = rect.top + rect.height/2;
+  const rawDx = fx - originX, rawDy = fy - originY;
   const dist = Math.hypot(rawDx, rawDy) || 1;
-  const mag = Math.min(90, dist * 0.4);
+  const cap = Math.min(W, H) * 0.38;
+  const mag = Math.min(dist, cap);
   const dx = (rawDx/dist) * mag;
   const dy = (rawDy/dist) * mag;
 
@@ -244,6 +249,7 @@ function onWarpArrived(){
   sentenceEl.style.opacity = '1';
   sentenceEl.style.filter = 'blur(0px)';
   nebulaEl.style.opacity = '1';
+  scheduleAuto();
 }
 
 document.body.addEventListener('click', (e) => {
@@ -253,11 +259,15 @@ document.body.addEventListener('click', (e) => {
 });
 
 const AUTO_INTERVAL = 16320; // 16.32 ثانیه
-setInterval(() => {
-  fx = cx;
-  fy = cy;
-  startWarp();
-}, AUTO_INTERVAL);
+let autoTimer = null;
+function scheduleAuto(){
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(() => {
+    fx = cx;
+    fy = cy;
+    startWarp();
+  }, AUTO_INTERVAL);
+}
 
 loadSentences();
 </script>
