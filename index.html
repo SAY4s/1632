@@ -173,7 +173,7 @@ function drawFrame(t){
     if(elapsed >= WARP_DURATION){
       warping = false;
       for(const s of stars){ s.z = 0.35 + Math.random()*0.65; s.dist = 40 + Math.random()*Math.max(W,H)*0.7; s.ang = Math.random()*Math.PI*2; }
-      onWarpArrived();
+      nebulaEl.style.opacity = '1';
     }
   } else {
     for(const s of stars){
@@ -216,19 +216,16 @@ async function loadSentences(){
 function startWarp(){
   if(!ready || warping) return;
   clearTimeout(autoTimer);
-  sentenceEl.style.transition = 'opacity .2s ease, filter .2s ease, transform .2s ease';
-  sentenceEl.style.opacity = '0';
-  sentenceEl.style.filter = 'blur(6px)';
-  sentenceEl.style.transform = 'scale(.96)';
-  nebulaEl.style.opacity = '0.35';
   pendingIndex = Math.floor(Math.random()*sentences.length);
   for(const s of stars){ s.warpZ0 = s.z; }
   lastWarpElapsed = 0;
   warping = true;
   warpStart = performance.now();
+  nebulaEl.style.opacity = '0.35';
+  revealSentence();
 }
 
-function onWarpArrived(){
+function revealSentence(){
   const rect = orbWrap.getBoundingClientRect();
   const originX = rect.left + rect.width/2;
   const originY = rect.top + rect.height/2;
@@ -239,17 +236,24 @@ function onWarpArrived(){
   const dx = (rawDx/dist) * mag;
   const dy = (rawDy/dist) * mag;
 
-  sentenceEl.textContent = sentences[pendingIndex];
-  sentenceEl.style.transition = 'none';
-  sentenceEl.style.transform = `translate(${dx}px, ${dy}px) scale(0.12)`;
+  sentenceEl.style.transition = 'opacity .15s ease, filter .15s ease, transform .15s ease';
   sentenceEl.style.opacity = '0';
-  sentenceEl.style.filter = 'blur(10px)';
-  void sentenceEl.offsetWidth; // force reflow so the transition below actually animates
-  sentenceEl.style.transition = 'opacity .7s ease-out, filter .7s ease-out, transform .8s cubic-bezier(.16,1,.3,1)';
-  sentenceEl.style.transform = 'translate(0px, 0px) scale(1)';
-  sentenceEl.style.opacity = '1';
-  sentenceEl.style.filter = 'blur(0px)';
-  nebulaEl.style.opacity = '1';
+  sentenceEl.style.filter = 'blur(6px)';
+  sentenceEl.style.transform = 'scale(.9)';
+
+  setTimeout(() => {
+    sentenceEl.textContent = sentences[pendingIndex];
+    sentenceEl.style.transition = 'none';
+    sentenceEl.style.transform = `translate(${dx}px, ${dy}px) scale(0.12)`;
+    sentenceEl.style.opacity = '0';
+    sentenceEl.style.filter = 'blur(10px)';
+    void sentenceEl.offsetWidth; // force reflow so the transition below actually animates
+    sentenceEl.style.transition = 'opacity .8s ease-out, filter .8s ease-out, transform .9s cubic-bezier(.16,1,.3,1)';
+    sentenceEl.style.transform = 'translate(0px, 0px) scale(1)';
+    sentenceEl.style.opacity = '1';
+    sentenceEl.style.filter = 'blur(0px)';
+  }, 150);
+
   scheduleAuto();
 }
 
