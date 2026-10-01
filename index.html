@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>1632Sentence</title>
+<title>1632</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lalezar&display=swap" rel="stylesheet">
@@ -82,6 +82,23 @@
   }
   #sentence.show{opacity:1; filter:blur(0); transform:scale(1);}
 
+  .egg{
+    position:fixed;
+    inset:0;
+    z-index:10;
+    background:#fff;
+    color:#111;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:clamp(1.1rem, 4vw, 2rem);
+    letter-spacing:1px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease;
+  }
+  .egg.show{opacity:1;}
+
   .err{color:#e0a37a; font-size:1rem;}
 
   @media (prefers-reduced-motion: reduce){
@@ -97,6 +114,7 @@
     <p id="sentence"></p>
   </div>
 </main>
+<div class="egg" id="egg">t.me/decaydmeats</div>
 
 <script>
 /* ---------- starfield / warp canvas ---------- */
@@ -258,10 +276,34 @@ function revealSentence(){
 }
 
 document.body.addEventListener('click', (e) => {
+  const now = Date.now();
+  clickTimes.push(now);
+  clickTimes = clickTimes.filter(ts => now - ts < RAPID_WINDOW);
+  if(clickTimes.length >= RAPID_THRESHOLD){
+    clickTimes = [];
+    showEasterEgg();
+    return;
+  }
   fx = e.clientX;
   fy = e.clientY;
   startWarp();
 });
+
+const RAPID_WINDOW = 1500;
+const RAPID_THRESHOLD = 8;
+let clickTimes = [];
+const eggEl = document.getElementById('egg');
+let eggTimer = null;
+
+function showEasterEgg(){
+  clearTimeout(autoTimer);
+  clearTimeout(eggTimer);
+  eggEl.classList.add('show');
+  eggTimer = setTimeout(() => {
+    eggEl.classList.remove('show');
+    scheduleAuto();
+  }, 3200);
+}
 
 const AUTO_INTERVAL = 16320; // 16.32 ثانیه
 let autoTimer = null;
