@@ -445,6 +445,9 @@ const chatClose = document.getElementById('chatClose');
 let starItems = null;
 let starLoading = false;
 let starIndex = 0;
+let currentWords = [];
+let currentWordIndex = 0;
+let currentReply = '';
 
 async function loadStarMessages(){
   if(starItems || starLoading) return;
@@ -455,10 +458,23 @@ async function loadStarMessages(){
     const data = await res.json();
     if(!Array.isArray(data) || data.length === 0) throw new Error('empty');
     starItems = data;
+    prepareNextItem();
   }catch(e){
     addBubble('فایل ۱۶۳۲Star.json پیدا نشد یا نامعتبر است.', 'in');
   }
   starLoading = false;
+}
+
+function prepareNextItem(){
+  chatInput.value = '';
+  currentWordIndex = 0;
+  currentWords = [];
+  currentReply = '';
+  if(!starItems || starItems.length === 0) return;
+  const item = starItems[starIndex % starItems.length];
+  starIndex++;
+  currentWords = item.send.split(' ');
+  currentReply = item.reply;
 }
 
 function addBubble(text, kind){
@@ -469,15 +485,19 @@ function addBubble(text, kind){
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+function revealNextWord(){
+  if(currentWordIndex >= currentWords.length) return;
+  const word = currentWords[currentWordIndex];
+  chatInput.value = chatInput.value ? (chatInput.value + ' ' + word) : word;
+  currentWordIndex++;
+}
+
 function sendChatMessage(){
-  chatInput.value = ''; // هر چی تایپ شده نادیده گرفته می‌شه
-  if(!starItems || starItems.length === 0) return;
-  const item = starItems[starIndex % starItems.length];
-  starIndex++;
-  addBubble(item.send, 'out');
-  setTimeout(() => {
-    addBubble(item.reply, 'in');
-  }, 750);
+  if(!chatInput.value) return;
+  addBubble(chatInput.value, 'out');
+  const reply = currentReply;
+  setTimeout(() => { addBubble(reply, 'in'); }, 750);
+  prepareNextItem();
 }
 
 function openChat(){
@@ -490,6 +510,8 @@ function closeChat(){
   chatOverlay.classList.remove('show');
   scheduleAuto();
 }
+
+const IGNORED_KEYS = ['Shift','Control','Alt','Meta','Tab','CapsLock','Escape'];
 
 unlockStarEl.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -504,10 +526,9 @@ chatSend.addEventListener('click', (e) => {
   sendChatMessage();
 });
 chatInput.addEventListener('keydown', (e) => {
-  if(e.key === 'Enter'){
-    e.preventDefault();
-    sendChatMessage();
-  }
+  if(IGNORED_KEYS.includes(e.key)) return;
+  e.preventDefault();
+  revealNextWord();
 });
 chatOverlay.addEventListener('click', (e) => e.stopPropagation());
 </script>
