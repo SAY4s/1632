@@ -109,6 +109,110 @@
 
   .err{color:#e0a37a; font-size:1rem;}
 
+  /* ---------- unlock star + chat ---------- */
+  .unlock-star{
+    position:fixed;
+    bottom:22px;
+    left:22px;
+    z-index:6;
+    width:34px;
+    height:34px;
+    border:none;
+    background:transparent;
+    color:var(--star-bright);
+    font-size:1.3rem;
+    opacity:0;
+    pointer-events:none;
+    transform:scale(.5);
+    transition:opacity .6s ease, transform .6s ease;
+    text-shadow:0 0 10px rgba(243,227,184,.8), 0 0 22px rgba(243,227,184,.4);
+    animation:pulseStar 2.4s ease-in-out infinite;
+  }
+  .unlock-star.show{opacity:1; pointer-events:auto; transform:scale(1);}
+  @keyframes pulseStar{
+    0%,100%{text-shadow:0 0 10px rgba(243,227,184,.8), 0 0 22px rgba(243,227,184,.4);}
+    50%{text-shadow:0 0 16px rgba(243,227,184,1), 0 0 34px rgba(243,227,184,.7);}
+  }
+
+  .chat-overlay{
+    position:fixed;
+    inset:0;
+    z-index:8;
+    background:linear-gradient(180deg, #0b0e24ee, #05060fee);
+    display:flex;
+    flex-direction:column;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .35s ease;
+  }
+  .chat-overlay.show{opacity:1; pointer-events:auto;}
+  .chat-close{
+    align-self:flex-start;
+    margin:max(16px, env(safe-area-inset-top,0px)) 16px 0;
+    width:34px; height:34px;
+    border-radius:50%;
+    border:1px solid rgba(243,227,184,.3);
+    background:rgba(255,255,255,.04);
+    color:var(--star);
+    font-size:1rem;
+    cursor:pointer;
+  }
+  .chat-messages{
+    flex:1;
+    overflow-y:auto;
+    padding:14px 16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .bubble{
+    max-width:78%;
+    padding:10px 14px;
+    border-radius:16px;
+    font-size:.95rem;
+    line-height:1.8;
+    text-align:right;
+    opacity:0;
+    transform:translateY(6px);
+    animation:bubbleIn .35s ease forwards;
+  }
+  @keyframes bubbleIn{ to{opacity:1; transform:translateY(0);} }
+  .bubble.out{
+    margin-left:auto;
+    background:linear-gradient(135deg, rgba(243,227,184,.92), rgba(224,163,122,.92));
+    color:#2a1a10;
+    border-bottom-left-radius:4px;
+  }
+  .bubble.in{
+    margin-right:auto;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.08);
+    color:var(--ink);
+    border-bottom-right-radius:4px;
+  }
+  .chat-options{
+    max-height:38vh;
+    overflow-y:auto;
+    padding:10px 16px max(14px, env(safe-area-inset-bottom,0px));
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    border-top:1px solid rgba(255,255,255,.08);
+  }
+  .chat-option-btn{
+    text-align:right;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(243,227,184,.25);
+    color:var(--ink);
+    border-radius:12px;
+    padding:10px 14px;
+    font-size:.9rem;
+    font-family:inherit;
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .chat-option-btn:hover{background:rgba(243,227,184,.1); border-color:rgba(243,227,184,.55);}
+
   @media (prefers-reduced-motion: reduce){
     #sentence{transition:opacity .3s ease;}
   }
@@ -123,6 +227,13 @@
   </div>
 </main>
 <div class="egg" id="egg">t.me/decaydmeats</div>
+
+<button class="unlock-star" id="unlockStar" aria-label="ستاره">✦</button>
+<div class="chat-overlay" id="chatOverlay">
+  <button class="chat-close" id="chatClose">✕</button>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-options" id="chatOptions"></div>
+</div>
 
 <script>
 /* ---------- starfield / warp canvas ---------- */
@@ -251,7 +362,12 @@ function startWarp(){
   revealSentence();
 }
 
+let revealCount = 0;
+
 function revealSentence(){
+  revealCount++;
+  if(revealCount >= 10){ unlockStarEl.classList.add('show'); }
+
   const rect = orbWrap.getBoundingClientRect();
   const originX = rect.left + rect.width/2;
   const originY = rect.top + rect.height/2;
@@ -325,6 +441,83 @@ function scheduleAuto(){
 }
 
 loadSentences();
+
+/* ---------- unlock star + messenger-style chat ---------- */
+const unlockStarEl = document.getElementById('unlockStar');
+const chatOverlay = document.getElementById('chatOverlay');
+const chatMessages = document.getElementById('chatMessages');
+const chatOptions = document.getElementById('chatOptions');
+const chatClose = document.getElementById('chatClose');
+
+let starItems = null;
+let starLoading = false;
+
+async function loadStarMessages(){
+  if(starItems || starLoading) return;
+  starLoading = true;
+  try{
+    const res = await fetch('1632Star.json?t=' + Date.now(), { cache: 'no-store' });
+    if(!res.ok) throw new Error('bad status');
+    const data = await res.json();
+    if(!Array.isArray(data) || data.length === 0) throw new Error('empty');
+    starItems = data;
+    renderChatOptions();
+  }catch(e){
+    chatOptions.innerHTML = '<span class="err">فایل ۱۶۳۲Star.json پیدا نشد یا نامعتبر است.<br>باید آرایه‌ای از آیتم‌های {send, reply} باشد.</span>';
+  }
+  starLoading = false;
+}
+
+function renderChatOptions(){
+  if(!starItems) return;
+  chatOptions.innerHTML = '';
+  starItems.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'chat-option-btn';
+    btn.textContent = item.send;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sendChatMessage(item);
+    });
+    chatOptions.appendChild(btn);
+  });
+}
+
+function addBubble(text, kind){
+  const b = document.createElement('div');
+  b.className = 'bubble ' + kind;
+  b.textContent = text;
+  chatMessages.appendChild(b);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function sendChatMessage(item){
+  addBubble(item.send, 'out');
+  setTimeout(() => {
+    addBubble(item.reply, 'in');
+  }, 750);
+}
+
+function openChat(){
+  clearTimeout(autoTimer);
+  chatOverlay.classList.add('show');
+  loadStarMessages();
+}
+
+function closeChat(){
+  chatOverlay.classList.remove('show');
+  scheduleAuto();
+}
+
+unlockStarEl.addEventListener('click', (e) => {
+  e.stopPropagation();
+  openChat();
+});
+chatClose.addEventListener('click', (e) => {
+  e.stopPropagation();
+  closeChat();
+});
+chatOverlay.addEventListener('click', (e) => e.stopPropagation());
 </script>
 </body>
 </html>
