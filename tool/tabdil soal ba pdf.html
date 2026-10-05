@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>نمایش پاسخ‌نامه آزمون</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--text:#1c2030;--muted:#6b7085;--line:#e3e6f0;--ok:#16a34a;--okbg:#e7f8ed;--accent:#4f46e5;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12141c;--card:#1b1e29;--text:#e8eaf3;--muted:#9aa0b8;--line:#2c3040;--ok:#4ade80;--okbg:#14301f;--accent:#818cf8}}
+:root[data-theme="dark"]{--bg:#12141c;--card:#1b1e29;--text:#e8eaf3;--muted:#9aa0b8;--line:#2c3040;--ok:#4ade80;--okbg:#14301f;--accent:#818cf8}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Vazirmatn",Tahoma,"Segoe UI",sans-serif;line-height:1.9}
+main{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.4rem;margin:8px 0 4px}
+p.sub{color:var(--muted);margin:0 0 16px;font-size:.92rem}
+.drop{border:2px dashed var(--line);background:var(--card);border-radius:14px;padding:22px;text-align:center;cursor:pointer;transition:.15s}
+.drop.over{border-color:var(--accent);background:var(--okbg)}
+.drop b{color:var(--accent)}
+textarea{width:100%;min-height:110px;margin-top:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);padding:10px;font:inherit;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+button{font:inherit;border:0;border-radius:10px;padding:8px 16px;cursor:pointer;background:var(--accent);color:#fff}
+button.alt{background:var(--card);color:var(--text);border:1px solid var(--line)}
+.q{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0;break-inside:avoid}
+.q h3{margin:0 0 8px;font-size:1rem;font-weight:600}
+.q h3 span{color:var(--muted);margin-left:6px}
+.opt{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:9px;margin:2px 0}
+.opt .m{width:22px;flex:none;text-align:center;font-weight:800;color:var(--ok)}
+.opt.ok{background:var(--okbg);color:var(--ok);font-weight:600}
+.warn{color:#d97706;font-size:.85rem}
+#stat{color:var(--muted);font-size:.9rem}
+body.hide .opt.ok .m{visibility:hidden}
+body.hide .opt.ok{background:none;color:inherit;font-weight:400}
+table.sheet{width:100%;border-collapse:collapse}
+table.sheet td{padding:0}
+.head{text-align:center;border-bottom:2px solid var(--accent);padding:8px 4px 10px;margin-bottom:8px;background:var(--bg)}
+.head .t{font-weight:800;font-size:1.15rem}
+.head .s{color:var(--muted);font-size:.9rem}
+#out{font-size:var(--fs,16px)}
+.q h3{font-size:1em}
+.size{display:inline-flex;align-items:center;gap:6px}
+.size button{padding:6px 12px;min-width:40px}
+.head{padding:3px 4px 4px;margin-bottom:4px;border-bottom-width:1px}
+.head .t{font-size:.85rem;font-weight:700;line-height:1.5}
+.head .s{font-size:.7rem;line-height:1.4}
+.foot{text-align:center;border-top:1px solid var(--accent);padding:3px 4px 0;margin-top:4px;background:var(--bg);font-size:.7rem;line-height:1.5;color:var(--muted)}
+.foot .ph{direction:ltr;unicode-bidi:isolate;font-weight:600;color:var(--text)}
+.q{padding:6px 12px;margin:5px 0;line-height:1.5}
+.q h3{margin:0 0 2px}
+.opt{padding:1px 8px;margin:0;gap:8px}
+@media print{@page{margin:10mm}.tools{display:none}body{background:#fff;color:#000}.head,.foot{background:#fff;color:#000}.head .s,.foot{color:#444}.foot .ph{color:#000}}
+</style>
+</head>
+<body>
+<main>
+<div class="tools">
+<h1>نمایش پاسخ‌نامه آزمون</h1>
+<p class="sub">فایل سوالات را بدهید؛ حروف الف/ب/ج/د حذف می‌شوند و جلوی گزینه درست تیک ✓ می‌خورد.</p>
+<label class="drop" id="drop"><input type="file" id="file" accept=".md,.txt,text/plain" hidden>
+فایل را اینجا بکشید یا <b>انتخاب کنید</b> (.md / .txt)</label>
+<textarea id="ta" placeholder="یا متن سوالات را اینجا paste کنید..."></textarea>
+<div class="row">
+<button id="go">نمایش</button>
+<button class="alt" id="toggle">پنهان‌کردن پاسخ‌ها</button>
+<span class="size"><button class="alt" id="smaller" title="کوچک‌تر">A−</button><span id="fsv">16</span><button class="alt" id="bigger" title="بزرگ‌تر">A+</button></span>
+<button class="alt" id="print">چاپ / PDF</button>
+<span id="stat"></span>
+</div>
+</div>
+<table class="sheet">
+<thead><tr><td><div class="head">
+<div class="t">جزوه سوالات امتحان تستی ICDL بین المللی</div>
+<div class="s">مجتمع بزرگ آموزشی خوارزمی با مدیریت مهندس ساجدی با 20 سال سابقه درخشان</div>
+</div></td></tr></thead>
+<tbody><tr><td><div id="out"></div></td></tr></tbody>
+<tfoot><tr><td><div class="foot">
+<div class="ph"><span>09387405653</span> - <span>02832562070</span></div>
+<div>محمدیه بلوار مطهری نبش یاس 6 مجتمع بزرگ آموزشی خوارزمی</div>
+</div></td></tr></tfoot>
+</table>
+</main>
+<script>
+const MAP={"الف":0,"ب":1,"ج":2,"د":3,"a":0,"b":1,"c":2,"d":3};
+const $=id=>document.getElementById(id);
+function parse(text){
+  const blocks=text.replace(/\r/g,"").split(/\n\s*\n/).map(b=>b.split("\n").map(l=>l.trim()).filter(Boolean)).filter(b=>b.length);
+  const res=[],bad=[];
+  for(const b of blocks){
+    const last=b[b.length-1].toLowerCase();
+    if(b.length>=6 && last in MAP){
+      const opts=b.slice(-5,-1), q=b.slice(0,-5).join(" ");
+      res.push({q,opts,ans:MAP[last]});
+    }else bad.push(b[0]);
+  }
+  return {res,bad};
+}
+function render(text){
+  const {res,bad}=parse(text), out=$("out");
+  out.innerHTML="";
+  res.forEach((r,i)=>{
+    const d=document.createElement("div");d.className="q";
+    const h=document.createElement("h3");
+    const n=document.createElement("span");n.textContent=(i+1)+".";
+    h.append(n,r.q);d.append(h);
+    r.opts.forEach((o,j)=>{
+      const e=document.createElement("div");e.className="opt"+(j===r.ans?" ok":"");
+      const m=document.createElement("span");m.className="m";m.textContent=j===r.ans?"✓":"";
+      const t=document.createElement("span");t.textContent=o;
+      e.append(m,t);d.append(e);
+    });
+    out.append(d);
+  });
+  $("stat").textContent=res.length+" سوال";
+  if(bad.length){const w=document.createElement("p");w.className="warn";w.textContent="بلوک‌های ناشناخته (نادیده گرفته شد): "+bad.join(" | ");out.append(w);}
+}
+function readFile(f){if(!f)return;const r=new FileReader();r.onload=()=>{$("ta").value=r.result;render(r.result)};r.readAsText(f,"utf-8")}
+$("file").onchange=e=>readFile(e.target.files[0]);
+const dr=$("drop");
+["dragover","dragenter"].forEach(ev=>dr.addEventListener(ev,e=>{e.preventDefault();dr.classList.add("over")}));
+["dragleave","drop"].forEach(ev=>dr.addEventListener(ev,e=>{e.preventDefault();dr.classList.remove("over")}));
+dr.addEventListener("drop",e=>readFile(e.dataTransfer.files[0]));
+$("go").onclick=()=>render($("ta").value);
+$("toggle").onclick=e=>{const h=document.body.classList.toggle("hide");e.target.textContent=h?"نمایش پاسخ‌ها":"پنهان‌کردن پاسخ‌ها"};
+$("print").onclick=()=>window.print();
+let fs=16;
+function setFs(v){fs=Math.min(32,Math.max(1,v));$("out").style.setProperty("--fs",fs+"px");$("fsv").textContent=fs}
+$("smaller").onclick=()=>setFs(fs-1);
+$("bigger").onclick=()=>setFs(fs+1);
+setFs(16);
+</script>
+</body>
+</html>
