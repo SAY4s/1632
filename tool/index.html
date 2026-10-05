@@ -1,0 +1,526 @@
+```html
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Explorer</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Tahoma, Arial, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+}
+
+header {
+    padding: 25px;
+    border-bottom: 1px solid #30363d;
+    background: #161b22;
+}
+
+h1 {
+    margin: 0 0 8px;
+    font-size: 25px;
+}
+
+.subtitle {
+    color: #8b949e;
+    font-size: 14px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 25px;
+}
+
+.upload {
+    border: 2px dashed #30363d;
+    border-radius: 15px;
+    padding: 35px;
+    text-align: center;
+    margin-bottom: 25px;
+    background: #161b22;
+    transition: .2s;
+}
+
+.upload:hover {
+    border-color: #58a6ff;
+}
+
+.upload input {
+    display: none;
+}
+
+.upload label {
+    display: inline-block;
+    padding: 13px 25px;
+    border-radius: 10px;
+    background: #238636;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.upload label:hover {
+    background: #2ea043;
+}
+
+.toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.search {
+    flex: 1;
+    min-width: 220px;
+    padding: 13px 15px;
+    border: 1px solid #30363d;
+    border-radius: 9px;
+    background: #161b22;
+    color: white;
+    outline: none;
+}
+
+.search:focus {
+    border-color: #58a6ff;
+}
+
+button {
+    border: 1px solid #30363d;
+    background: #21262d;
+    color: white;
+    padding: 12px 17px;
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #30363d;
+}
+
+.stats {
+    color: #8b949e;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 15px;
+}
+
+.file {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.file:hover {
+    transform: translateY(-3px);
+    border-color: #58a6ff;
+}
+
+.preview {
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d1117;
+    overflow: hidden;
+}
+
+.preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.icon {
+    font-size: 55px;
+}
+
+.info {
+    padding: 13px;
+}
+
+.name {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.meta {
+    margin-top: 7px;
+    color: #8b949e;
+    font-size: 12px;
+}
+
+.empty {
+    text-align: center;
+    padding: 70px 20px;
+    color: #8b949e;
+}
+
+.folder {
+    border-color: #9e6a03;
+}
+
+.folder .preview {
+    background: #1c1608;
+}
+
+#fileInput {
+    display: none;
+}
+
+@media(max-width:600px) {
+    .container {
+        padding: 15px;
+    }
+
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>📁 File Explorer</h1>
+    <div class="subtitle">
+        نمایش فایل‌های یک پوشه
+    </div>
+</header>
+
+<div class="container">
+
+    <div class="upload">
+        <div style="font-size:50px;margin-bottom:15px;">📂</div>
+
+        <div style="margin-bottom:18px;color:#8b949e">
+            پوشه‌ای که می‌خواهی فایل‌های آن نمایش داده شوند انتخاب کن
+        </div>
+
+        <label for="fileInput">
+            انتخاب پوشه
+        </label>
+
+        <input
+            id="fileInput"
+            type="file"
+            webkitdirectory
+            directory
+            multiple
+        >
+    </div>
+
+    <div class="toolbar">
+
+        <input
+            id="search"
+            class="search"
+            placeholder="🔍 جستجوی فایل..."
+        >
+
+        <button onclick="sortFiles('name')">
+            ↕ نام
+        </button>
+
+        <button onclick="sortFiles('size')">
+            ↕ حجم
+        </button>
+
+        <button onclick="sortFiles('type')">
+            ↕ نوع
+        </button>
+
+    </div>
+
+    <div id="stats" class="stats">
+        هنوز پوشه‌ای انتخاب نشده
+    </div>
+
+    <div id="files" class="grid">
+        <div class="empty">
+            ابتدا یک پوشه انتخاب کن
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+let allFiles = [];
+let currentSort = "name";
+
+const input = document.getElementById("fileInput");
+const container = document.getElementById("files");
+const search = document.getElementById("search");
+const stats = document.getElementById("stats");
+
+input.addEventListener("change", function () {
+
+    allFiles = Array.from(this.files);
+
+    render();
+
+});
+
+search.addEventListener("input", render);
+
+function render() {
+
+    let files = [...allFiles];
+
+    const query = search.value.toLowerCase().trim();
+
+    if (query) {
+
+        files = files.filter(file =>
+            file.name.toLowerCase().includes(query)
+        );
+
+    }
+
+    files.sort((a,b) => {
+
+        if (currentSort === "name")
+            return a.name.localeCompare(b.name);
+
+        if (currentSort === "size")
+            return b.size - a.size;
+
+        if (currentSort === "type")
+            return a.type.localeCompare(b.type);
+
+    });
+
+    stats.innerHTML =
+        `${files.length} فایل از ${allFiles.length} فایل`;
+
+    if (!files.length) {
+
+        container.innerHTML = `
+            <div class="empty">
+                فایلی پیدا نشد
+            </div>
+        `;
+
+        return;
+    }
+
+    container.innerHTML = "";
+
+    files.forEach(file => {
+
+        const card = document.createElement("div");
+
+        card.className = "file";
+
+        const preview = document.createElement("div");
+
+        preview.className = "preview";
+
+        const info = document.createElement("div");
+
+        info.className = "info";
+
+        const name = document.createElement("div");
+
+        name.className = "name";
+
+        name.textContent = file.name;
+
+        const meta = document.createElement("div");
+
+        meta.className = "meta";
+
+        meta.textContent =
+            `${getType(file)} • ${formatSize(file.size)}`;
+
+        info.appendChild(name);
+        info.appendChild(meta);
+
+        card.appendChild(preview);
+        card.appendChild(info);
+
+        if (file.type.startsWith("image/")) {
+
+            const img = document.createElement("img");
+
+            img.src = URL.createObjectURL(file);
+
+            preview.appendChild(img);
+
+        }
+
+        else if (file.type.startsWith("video/")) {
+
+            const icon = document.createElement("div");
+
+            icon.className = "icon";
+
+            icon.textContent = "🎬";
+
+            preview.appendChild(icon);
+
+        }
+
+        else if (file.type.startsWith("audio/")) {
+
+            const icon = document.createElement("div");
+
+            icon.className = "icon";
+
+            icon.textContent = "🎵";
+
+            preview.appendChild(icon);
+
+        }
+
+        else if (file.type === "application/pdf") {
+
+            const icon = document.createElement("div");
+
+            icon.className = "icon";
+
+            icon.textContent = "📕";
+
+            preview.appendChild(icon);
+
+        }
+
+        else {
+
+            const icon = document.createElement("div");
+
+            icon.className = "icon";
+
+            icon.textContent = getIcon(file.name);
+
+            preview.appendChild(icon);
+
+        }
+
+        card.addEventListener("click", () => openFile(file));
+
+        container.appendChild(card);
+
+    });
+
+}
+
+function openFile(file) {
+
+    const url = URL.createObjectURL(file);
+
+    window.open(url, "_blank");
+
+}
+
+function sortFiles(type) {
+
+    currentSort = type;
+
+    render();
+
+}
+
+function formatSize(bytes) {
+
+    if (bytes === 0)
+        return "0 B";
+
+    const units = ["B", "KB", "MB", "GB"];
+
+    const i = Math.floor(
+        Math.log(bytes) / Math.log(1024)
+    );
+
+    return (
+        (bytes / Math.pow(1024, i)).toFixed(1)
+        + " "
+        + units[i]
+    );
+
+}
+
+function getType(file) {
+
+    if (file.type)
+        return file.type.split("/")[1];
+
+    return "فایل";
+
+}
+
+function getIcon(name) {
+
+    const ext =
+        name.split(".").pop().toLowerCase();
+
+    const icons = {
+
+        js: "📜",
+        html: "🌐",
+        css: "🎨",
+
+        json: "🗃️",
+        txt: "📄",
+
+        pdf: "📕",
+
+        doc: "📘",
+        docx: "📘",
+
+        xls: "📊",
+        xlsx: "📊",
+
+        ppt: "📙",
+        pptx: "📙",
+
+        zip: "🗜️",
+        rar: "🗜️",
+        "7z": "🗜️",
+
+        mp3: "🎵",
+        wav: "🎵",
+
+        mp4: "🎬",
+        mkv: "🎬",
+        avi: "🎬",
+
+        exe: "⚙️",
+
+        py: "🐍",
+
+        psd: "🖼️",
+
+        apk: "📱"
+
+    };
+
+    return icons[ext] || "📄";
+
+}
+
+</script>
+
+</body>
+</html>
+```
