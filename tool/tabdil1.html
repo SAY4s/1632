@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>نمایش پاسخ‌نامه آزمون</title>
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&family=Lalezar&family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Kufi+Arabic:wght@400;700&family=Amiri:wght@400;700&family=Cairo:wght@400;700&family=Markazi+Text:wght@400;700&family=Reem+Kufi:wght@400;700&family=Aref+Ruqaa:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f6f7fb;--card:#fff;--text:#1c2030;--muted:#6b7085;--line:#e3e6f0;--ok:#16a34a;--okbg:#e7f8ed;--accent:#4f46e5;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -50,7 +50,7 @@ table.sheet td{padding:0}
 .edit{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:8px 0}
 .edit summary{cursor:pointer;font-weight:600}
 .edit label{display:block;font-size:.85rem;color:var(--muted);margin-top:8px}
-.edit input{display:block;width:100%;margin-top:2px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);padding:6px 10px;font:inherit}
+.edit input,.edit select{display:block;width:100%;margin-top:2px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);padding:6px 10px;font:inherit}
 .edit button{margin-top:10px}
 .q{padding:6px 12px;margin:5px 0;line-height:1.5}
 .q h3{margin:0 0 2px}
@@ -78,6 +78,8 @@ table.sheet td{padding:0}
 <label>خط دوم هدر<input id="eS"></label>
 <label>شماره‌ها (فوتر)<input id="eP" dir="ltr"></label>
 <label>آدرس (فوتر)<input id="eA"></label>
+<label>فونت هدر<select id="eHF"><option value="">پیش‌فرض (وزیرمتن)</option><option value="Lalezar">لاله‌زار</option><option value="Noto Naskh Arabic">نسخ</option><option value="Noto Kufi Arabic">کوفی</option><option value="Amiri">امیری</option><option value="Cairo">قاهره</option><option value="Markazi Text">مرکزی</option><option value="Reem Kufi">ریم کوفی</option><option value="Aref Ruqaa">عارف رقعه</option><option value="Tahoma">Tahoma</option></select></label>
+<label>فونت فوتر<select id="eFF"><option value="">پیش‌فرض (وزیرمتن)</option><option value="Lalezar">لاله‌زار</option><option value="Noto Naskh Arabic">نسخ</option><option value="Noto Kufi Arabic">کوفی</option><option value="Amiri">امیری</option><option value="Cairo">قاهره</option><option value="Markazi Text">مرکزی</option><option value="Reem Kufi">ریم کوفی</option><option value="Aref Ruqaa">عارف رقعه</option><option value="Tahoma">Tahoma</option></select></label>
 <button class="alt" id="reset" type="button">بازگشت به پیش‌فرض</button>
 </details>
 </div>
@@ -143,16 +145,18 @@ $("bigger").onclick=()=>setFs(fs+1);
 setFs(16);
 const HF=[["eT","hT"],["eS","hS"],["eP","fP"],["eA","fA"]];
 const DEF={};HF.forEach(([e,t])=>DEF[e]=$(t).textContent);
+const FN=[["eHF",".head"],["eFF",".foot"]];
 let saved={};
 try{saved=JSON.parse(localStorage.getItem("hf")||"{}")}catch(_){}
-function applyHF(){HF.forEach(([e,t])=>{$(t).textContent=$(e).value})}
-function saveHF(){try{const o={};HF.forEach(([e])=>o[e]=$(e).value);localStorage.setItem("hf",JSON.stringify(o))}catch(_){}}
+function applyHF(){HF.forEach(([e,t])=>{$(t).textContent=$(e).value});FN.forEach(([e,q])=>{const f=$(e).value;document.querySelector(q).style.fontFamily=f?`"${f}",Tahoma,sans-serif`:""})}
+function saveHF(){try{const o={};HF.concat(FN).forEach(([e])=>o[e]=$(e).value);localStorage.setItem("hf",JSON.stringify(o))}catch(_){}}
 HF.forEach(([e])=>{
   $(e).value=(saved[e]!=null?saved[e]:DEF[e]);
   $(e).addEventListener("input",()=>{applyHF();saveHF()});
 });
+FN.forEach(([e])=>{$(e).value=saved[e]||"";$(e).addEventListener("change",()=>{applyHF();saveHF()})});
 applyHF();
-$("reset").onclick=()=>{HF.forEach(([e])=>$(e).value=DEF[e]);applyHF();saveHF()};
+$("reset").onclick=()=>{HF.forEach(([e])=>$(e).value=DEF[e]);FN.forEach(([e])=>$(e).value="");applyHF();saveHF()};
 </script>
 </body>
 </html>
