@@ -47,6 +47,11 @@ table.sheet td{padding:0}
 .head .s{font-size:.7rem;line-height:1.4}
 .foot{text-align:center;border-top:1px solid var(--accent);padding:3px 4px 0;margin-top:4px;background:var(--bg);font-size:.7rem;line-height:1.5;color:var(--muted)}
 .foot .ph{direction:ltr;unicode-bidi:isolate;font-weight:600;color:var(--text)}
+.edit{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:8px 0}
+.edit summary{cursor:pointer;font-weight:600}
+.edit label{display:block;font-size:.85rem;color:var(--muted);margin-top:8px}
+.edit input{display:block;width:100%;margin-top:2px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);padding:6px 10px;font:inherit}
+.edit button{margin-top:10px}
 .q{padding:6px 12px;margin:5px 0;line-height:1.5}
 .q h3{margin:0 0 2px}
 .opt{padding:1px 8px;margin:0;gap:8px}
@@ -68,16 +73,23 @@ table.sheet td{padding:0}
 <button class="alt" id="print">چاپ / PDF</button>
 <span id="stat"></span>
 </div>
+<details class="edit"><summary>ویرایش هدر و فوتر</summary>
+<label>عنوان هدر<input id="eT"></label>
+<label>خط دوم هدر<input id="eS"></label>
+<label>شماره‌ها (فوتر)<input id="eP" dir="ltr"></label>
+<label>آدرس (فوتر)<input id="eA"></label>
+<button class="alt" id="reset" type="button">بازگشت به پیش‌فرض</button>
+</details>
 </div>
 <table class="sheet">
 <thead><tr><td><div class="head">
-<div class="t">جزوه سوالات امتحان تستی ICDL بین المللی</div>
-<div class="s">مجتمع بزرگ آموزشی خوارزمی با مدیریت مهندس ساجدی با 20 سال سابقه درخشان</div>
+<div class="t" id="hT">جزوه سوالات امتحان تستی ICDL بین المللی</div>
+<div class="s" id="hS">مجتمع بزرگ آموزشی خوارزمی با مدیریت مهندس ساجدی با 20 سال سابقه درخشان</div>
 </div></td></tr></thead>
 <tbody><tr><td><div id="out"></div></td></tr></tbody>
 <tfoot><tr><td><div class="foot">
-<div class="ph"><span>09387405653</span> - <span>02832562070</span></div>
-<div>محمدیه بلوار مطهری نبش یاس 6 مجتمع بزرگ آموزشی خوارزمی</div>
+<div class="ph" id="fP">09387405653 - 02832562070</div>
+<div id="fA">محمدیه بلوار مطهری نبش یاس 6 مجتمع بزرگ آموزشی خوارزمی</div>
 </div></td></tr></tfoot>
 </table>
 </main>
@@ -129,6 +141,18 @@ function setFs(v){fs=Math.min(32,Math.max(10,v));$("out").style.setProperty("--f
 $("smaller").onclick=()=>setFs(fs-1);
 $("bigger").onclick=()=>setFs(fs+1);
 setFs(16);
+const HF=[["eT","hT"],["eS","hS"],["eP","fP"],["eA","fA"]];
+const DEF={};HF.forEach(([e,t])=>DEF[e]=$(t).textContent);
+let saved={};
+try{saved=JSON.parse(localStorage.getItem("hf")||"{}")}catch(_){}
+function applyHF(){HF.forEach(([e,t])=>{$(t).textContent=$(e).value})}
+function saveHF(){try{const o={};HF.forEach(([e])=>o[e]=$(e).value);localStorage.setItem("hf",JSON.stringify(o))}catch(_){}}
+HF.forEach(([e])=>{
+  $(e).value=(saved[e]!=null?saved[e]:DEF[e]);
+  $(e).addEventListener("input",()=>{applyHF();saveHF()});
+});
+applyHF();
+$("reset").onclick=()=>{HF.forEach(([e])=>$(e).value=DEF[e]);applyHF();saveHF()};
 </script>
 </body>
 </html>
