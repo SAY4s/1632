@@ -40,12 +40,12 @@ table.sheet td{padding:0}
 .head .s{color:var(--muted);font-size:.9rem}
 #out{font-size:var(--fs,16px)}
 .q h3{font-size:1em}
-.size{display:inline-flex;align-items:center;gap:6px}
-.size button{padding:6px 12px;min-width:40px}
+.num{display:inline-flex;align-items:center;gap:6px;font-size:.9rem}
+.num input,.edit input[type=number]{width:72px}
 .head{padding:3px 4px 4px;margin-bottom:4px;border-bottom-width:1px}
-.head .t{font-size:.85rem;font-weight:700;line-height:1.5}
-.head .s{font-size:.7rem;line-height:1.4}
-.foot{text-align:center;border-top:1px solid var(--accent);padding:3px 4px 0;margin-top:4px;background:var(--bg);font-size:.7rem;line-height:1.5;color:var(--muted)}
+.head{font-size:14px}.head .t{font-size:1em;font-weight:700;line-height:1.5}
+.head .s{font-size:.82em;line-height:1.4}
+.foot{text-align:center;border-top:1px solid var(--accent);padding:3px 4px 0;margin-top:4px;background:var(--bg);font-size:11px;line-height:1.5;color:var(--muted)}
 .foot .ph{direction:ltr;unicode-bidi:isolate;font-weight:600;color:var(--text)}
 .edit{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:8px 0}
 .edit summary{cursor:pointer;font-weight:600}
@@ -69,7 +69,7 @@ table.sheet td{padding:0}
 <div class="row">
 <button id="go">نمایش</button>
 <button class="alt" id="toggle">پنهان‌کردن پاسخ‌ها</button>
-<span class="size"><button class="alt" id="smaller" title="کوچک‌تر">A−</button><span id="fsv">16</span><button class="alt" id="bigger" title="بزرگ‌تر">A+</button></span>
+<label class="num">اندازه سوالات<input type="number" id="sQ" min="8" max="60" step="1" value="16"></label>
 <button class="alt" id="print">چاپ / PDF</button>
 <span id="stat"></span>
 </div>
@@ -78,6 +78,8 @@ table.sheet td{padding:0}
 <label>خط دوم هدر<input id="eS"></label>
 <label>شماره‌ها (فوتر)<input id="eP" dir="ltr"></label>
 <label>آدرس (فوتر)<input id="eA"></label>
+<label>اندازه هدر<input type="number" id="sH" min="6" max="60" step="1" value="14"></label>
+<label>اندازه فوتر<input type="number" id="sF" min="6" max="60" step="1" value="11"></label>
 <label>فونت هدر<select id="eHF"><option value="">پیش‌فرض (وزیرمتن)</option><option value="Lalezar">لاله‌زار</option><option value="Noto Naskh Arabic">نسخ</option><option value="Noto Kufi Arabic">کوفی</option><option value="Amiri">امیری</option><option value="Cairo">قاهره</option><option value="Markazi Text">مرکزی</option><option value="Reem Kufi">ریم کوفی</option><option value="Aref Ruqaa">عارف رقعه</option><option value="Tahoma">Tahoma</option></select></label>
 <label>فونت فوتر<select id="eFF"><option value="">پیش‌فرض (وزیرمتن)</option><option value="Lalezar">لاله‌زار</option><option value="Noto Naskh Arabic">نسخ</option><option value="Noto Kufi Arabic">کوفی</option><option value="Amiri">امیری</option><option value="Cairo">قاهره</option><option value="Markazi Text">مرکزی</option><option value="Reem Kufi">ریم کوفی</option><option value="Aref Ruqaa">عارف رقعه</option><option value="Tahoma">Tahoma</option></select></label>
 <button class="alt" id="reset" type="button">بازگشت به پیش‌فرض</button>
@@ -138,25 +140,23 @@ dr.addEventListener("drop",e=>readFile(e.dataTransfer.files[0]));
 $("go").onclick=()=>render($("ta").value);
 $("toggle").onclick=e=>{const h=document.body.classList.toggle("hide");e.target.textContent=h?"نمایش پاسخ‌ها":"پنهان‌کردن پاسخ‌ها"};
 $("print").onclick=()=>window.print();
-let fs=16;
-function setFs(v){fs=Math.min(32,Math.max(10,v));$("out").style.setProperty("--fs",fs+"px");$("fsv").textContent=fs}
-$("smaller").onclick=()=>setFs(fs-1);
-$("bigger").onclick=()=>setFs(fs+1);
-setFs(16);
+
 const HF=[["eT","hT"],["eS","hS"],["eP","fP"],["eA","fA"]];
 const DEF={};HF.forEach(([e,t])=>DEF[e]=$(t).textContent);
 const FN=[["eHF",".head"],["eFF",".foot"]];
+const SZ=[["sQ",16,8,60],["sH",14,6,60],["sF",11,6,60]];
 let saved={};
 try{saved=JSON.parse(localStorage.getItem("hf")||"{}")}catch(_){}
-function applyHF(){HF.forEach(([e,t])=>{$(t).textContent=$(e).value});FN.forEach(([e,q])=>{const f=$(e).value;document.querySelector(q).style.fontFamily=f?`"${f}",Tahoma,sans-serif`:""})}
-function saveHF(){try{const o={};HF.concat(FN).forEach(([e])=>o[e]=$(e).value);localStorage.setItem("hf",JSON.stringify(o))}catch(_){}}
+function applyHF(){HF.forEach(([e,t])=>{$(t).textContent=$(e).value});const g=id=>{const d=SZ.find(x=>x[0]===id),n=parseFloat($(id).value);return isNaN(n)?d[1]:Math.min(d[3],Math.max(d[2],n))};$("out").style.setProperty("--fs",g("sQ")+"px");document.querySelector(".head").style.fontSize=g("sH")+"px";document.querySelector(".foot").style.fontSize=g("sF")+"px";FN.forEach(([e,q])=>{const f=$(e).value;document.querySelector(q).style.fontFamily=f?`"${f}",Tahoma,sans-serif`:""})}
+function saveHF(){try{const o={};HF.concat(FN,SZ).forEach(([e])=>o[e]=$(e).value);localStorage.setItem("hf",JSON.stringify(o))}catch(_){}}
 HF.forEach(([e])=>{
   $(e).value=(saved[e]!=null?saved[e]:DEF[e]);
   $(e).addEventListener("input",()=>{applyHF();saveHF()});
 });
+SZ.forEach(([e,d])=>{$(e).value=saved[e]||d;$(e).addEventListener("input",()=>{applyHF();saveHF()})});
 FN.forEach(([e])=>{$(e).value=saved[e]||"";$(e).addEventListener("change",()=>{applyHF();saveHF()})});
 applyHF();
-$("reset").onclick=()=>{HF.forEach(([e])=>$(e).value=DEF[e]);FN.forEach(([e])=>$(e).value="");applyHF();saveHF()};
+$("reset").onclick=()=>{HF.forEach(([e])=>$(e).value=DEF[e]);FN.forEach(([e])=>$(e).value="");SZ.forEach(([e,d])=>$(e).value=d);applyHF();saveHF()};
 </script>
 </body>
 </html>
