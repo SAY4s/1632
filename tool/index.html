@@ -1,10 +1,10 @@
-```html
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>File Explorer</title>
+
+<title>Tool Files</title>
 
 <style>
 * {
@@ -20,18 +20,18 @@ body {
 
 header {
     padding: 25px;
-    border-bottom: 1px solid #30363d;
     background: #161b22;
+    border-bottom: 1px solid #30363d;
 }
 
-h1 {
+header h1 {
     margin: 0 0 8px;
     font-size: 25px;
 }
 
-.subtitle {
+header p {
+    margin: 0;
     color: #8b949e;
-    font-size: 14px;
 }
 
 .container {
@@ -40,53 +40,21 @@ h1 {
     padding: 25px;
 }
 
-.upload {
-    border: 2px dashed #30363d;
-    border-radius: 15px;
-    padding: 35px;
-    text-align: center;
-    margin-bottom: 25px;
-    background: #161b22;
-    transition: .2s;
-}
-
-.upload:hover {
-    border-color: #58a6ff;
-}
-
-.upload input {
-    display: none;
-}
-
-.upload label {
-    display: inline-block;
-    padding: 13px 25px;
-    border-radius: 10px;
-    background: #238636;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.upload label:hover {
-    background: #2ea043;
-}
-
 .toolbar {
     display: flex;
     gap: 10px;
-    flex-wrap: wrap;
     margin-bottom: 20px;
 }
 
 .search {
     flex: 1;
-    min-width: 220px;
-    padding: 13px 15px;
+    padding: 13px 16px;
+    border-radius: 10px;
     border: 1px solid #30363d;
-    border-radius: 9px;
     background: #161b22;
     color: white;
     outline: none;
+    font-size: 14px;
 }
 
 .search:focus {
@@ -97,8 +65,8 @@ button {
     border: 1px solid #30363d;
     background: #21262d;
     color: white;
-    padding: 12px 17px;
-    border-radius: 9px;
+    border-radius: 10px;
+    padding: 10px 17px;
     cursor: pointer;
 }
 
@@ -106,9 +74,9 @@ button:hover {
     background: #30363d;
 }
 
-.stats {
+.path {
     color: #8b949e;
-    margin-bottom: 15px;
+    margin-bottom: 18px;
     font-size: 14px;
 }
 
@@ -118,37 +86,27 @@ button:hover {
     gap: 15px;
 }
 
-.file {
+.card {
     background: #161b22;
     border: 1px solid #30363d;
-    border-radius: 12px;
+    border-radius: 13px;
     overflow: hidden;
     cursor: pointer;
     transition: .2s;
 }
 
-.file:hover {
+.card:hover {
     transform: translateY(-3px);
     border-color: #58a6ff;
 }
 
-.preview {
+.icon {
     height: 130px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0d1117;
-    overflow: hidden;
-}
-
-.preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.icon {
     font-size: 55px;
+    background: #0d1117;
 }
 
 .info {
@@ -162,28 +120,25 @@ button:hover {
     text-overflow: ellipsis;
 }
 
-.meta {
+.type {
     margin-top: 7px;
     color: #8b949e;
     font-size: 12px;
 }
 
-.empty {
+.status {
+    padding: 50px;
     text-align: center;
-    padding: 70px 20px;
     color: #8b949e;
 }
 
-.folder {
-    border-color: #9e6a03;
+.error {
+    color: #ff7b72;
 }
 
-.folder .preview {
-    background: #1c1608;
-}
-
-#fileInput {
+.back {
     display: none;
+    margin-bottom: 15px;
 }
 
 @media(max-width:600px) {
@@ -201,33 +156,11 @@ button:hover {
 <body>
 
 <header>
-    <h1>📁 File Explorer</h1>
-    <div class="subtitle">
-        نمایش فایل‌های یک پوشه
-    </div>
+    <h1>📁 SAY4s / 1632 / tool</h1>
+    <p>فایل‌های موجود در پوشه Tool</p>
 </header>
 
 <div class="container">
-
-    <div class="upload">
-        <div style="font-size:50px;margin-bottom:15px;">📂</div>
-
-        <div style="margin-bottom:18px;color:#8b949e">
-            پوشه‌ای که می‌خواهی فایل‌های آن نمایش داده شوند انتخاب کن
-        </div>
-
-        <label for="fileInput">
-            انتخاب پوشه
-        </label>
-
-        <input
-            id="fileInput"
-            type="file"
-            webkitdirectory
-            directory
-            multiple
-        >
-    </div>
 
     <div class="toolbar">
 
@@ -237,27 +170,26 @@ button:hover {
             placeholder="🔍 جستجوی فایل..."
         >
 
-        <button onclick="sortFiles('name')">
-            ↕ نام
-        </button>
-
-        <button onclick="sortFiles('size')">
-            ↕ حجم
-        </button>
-
-        <button onclick="sortFiles('type')">
-            ↕ نوع
+        <button onclick="loadFiles()">
+            🔄 بروزرسانی
         </button>
 
     </div>
 
-    <div id="stats" class="stats">
-        هنوز پوشه‌ای انتخاب نشده
+    <button
+        id="backButton"
+        class="back"
+        onclick="goBack()">
+        ← برگشت
+    </button>
+
+    <div id="path" class="path">
+        📁 tool
     </div>
 
     <div id="files" class="grid">
-        <div class="empty">
-            ابتدا یک پوشه انتخاب کن
+        <div class="status">
+            در حال دریافت فایل‌ها...
         </div>
     </div>
 
@@ -265,58 +197,107 @@ button:hover {
 
 <script>
 
-let allFiles = [];
-let currentSort = "name";
+const OWNER = "SAY4s";
+const REPO = "1632";
+const BRANCH = "main";
 
-const input = document.getElementById("fileInput");
-const container = document.getElementById("files");
-const search = document.getElementById("search");
-const stats = document.getElementById("stats");
+let currentPath = "tool";
+let history = [];
 
-input.addEventListener("change", function () {
+let allItems = [];
 
-    allFiles = Array.from(this.files);
+const filesContainer =
+    document.getElementById("files");
 
-    render();
+const searchInput =
+    document.getElementById("search");
 
-});
+const pathElement =
+    document.getElementById("path");
 
-search.addEventListener("input", render);
+const backButton =
+    document.getElementById("backButton");
 
-function render() {
 
-    let files = [...allFiles];
+// دریافت محتویات پوشه
+async function loadFiles(path = currentPath) {
 
-    const query = search.value.toLowerCase().trim();
+    currentPath = path;
+
+    filesContainer.innerHTML = `
+        <div class="status">
+            ⏳ در حال دریافت فایل‌ها...
+        </div>
+    `;
+
+    try {
+
+        const api =
+            `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`;
+
+        const response =
+            await fetch(api);
+
+        if (!response.ok) {
+            throw new Error(
+                "خطا در دریافت اطلاعات GitHub"
+            );
+        }
+
+        const data =
+            await response.json();
+
+        allItems = data;
+
+        updatePath();
+
+        render(data);
+
+    } catch (error) {
+
+        filesContainer.innerHTML = `
+            <div class="status error">
+                ❌ دریافت فایل‌ها با خطا مواجه شد
+                <br><br>
+                ${error.message}
+            </div>
+        `;
+
+    }
+
+}
+
+
+// نمایش فایل‌ها
+function render(items) {
+
+    const query =
+        searchInput.value
+        .toLowerCase()
+        .trim();
 
     if (query) {
 
-        files = files.filter(file =>
-            file.name.toLowerCase().includes(query)
+        items = items.filter(item =>
+            item.name.toLowerCase().includes(query)
         );
 
     }
 
-    files.sort((a,b) => {
+    // اول پوشه‌ها
+    items.sort((a, b) => {
 
-        if (currentSort === "name")
+        if (a.type === b.type)
             return a.name.localeCompare(b.name);
 
-        if (currentSort === "size")
-            return b.size - a.size;
-
-        if (currentSort === "type")
-            return a.type.localeCompare(b.type);
+        return a.type === "dir" ? -1 : 1;
 
     });
 
-    stats.innerHTML =
-        `${files.length} فایل از ${allFiles.length} فایل`;
+    if (!items.length) {
 
-    if (!files.length) {
-
-        container.innerHTML = `
-            <div class="empty">
+        filesContainer.innerHTML = `
+            <div class="status">
                 فایلی پیدا نشد
             </div>
         `;
@@ -324,194 +305,192 @@ function render() {
         return;
     }
 
-    container.innerHTML = "";
+    filesContainer.innerHTML = "";
 
-    files.forEach(file => {
+    items.forEach(item => {
 
-        const card = document.createElement("div");
+        const card =
+            document.createElement("div");
 
-        card.className = "file";
+        card.className = "card";
 
-        const preview = document.createElement("div");
+        const icon =
+            document.createElement("div");
 
-        preview.className = "preview";
+        icon.className = "icon";
 
-        const info = document.createElement("div");
+        icon.textContent =
+            item.type === "dir"
+                ? "📁"
+                : getIcon(item.name);
+
+        const info =
+            document.createElement("div");
 
         info.className = "info";
 
-        const name = document.createElement("div");
+        const name =
+            document.createElement("div");
 
         name.className = "name";
 
-        name.textContent = file.name;
+        name.textContent = item.name;
 
-        const meta = document.createElement("div");
+        const type =
+            document.createElement("div");
 
-        meta.className = "meta";
+        type.className = "type";
 
-        meta.textContent =
-            `${getType(file)} • ${formatSize(file.size)}`;
+        type.textContent =
+            item.type === "dir"
+                ? "پوشه"
+                : getExtension(item.name);
 
         info.appendChild(name);
-        info.appendChild(meta);
+        info.appendChild(type);
 
-        card.appendChild(preview);
+        card.appendChild(icon);
         card.appendChild(info);
 
-        if (file.type.startsWith("image/")) {
+        card.onclick = () => {
 
-            const img = document.createElement("img");
+            if (item.type === "dir") {
 
-            img.src = URL.createObjectURL(file);
+                history.push(currentPath);
 
-            preview.appendChild(img);
+                loadFiles(item.path);
 
-        }
+            } else {
 
-        else if (file.type.startsWith("video/")) {
+                openFile(item);
 
-            const icon = document.createElement("div");
+            }
 
-            icon.className = "icon";
+        };
 
-            icon.textContent = "🎬";
-
-            preview.appendChild(icon);
-
-        }
-
-        else if (file.type.startsWith("audio/")) {
-
-            const icon = document.createElement("div");
-
-            icon.className = "icon";
-
-            icon.textContent = "🎵";
-
-            preview.appendChild(icon);
-
-        }
-
-        else if (file.type === "application/pdf") {
-
-            const icon = document.createElement("div");
-
-            icon.className = "icon";
-
-            icon.textContent = "📕";
-
-            preview.appendChild(icon);
-
-        }
-
-        else {
-
-            const icon = document.createElement("div");
-
-            icon.className = "icon";
-
-            icon.textContent = getIcon(file.name);
-
-            preview.appendChild(icon);
-
-        }
-
-        card.addEventListener("click", () => openFile(file));
-
-        container.appendChild(card);
+        filesContainer.appendChild(card);
 
     });
 
 }
 
-function openFile(file) {
 
-    const url = URL.createObjectURL(file);
+// باز کردن فایل
+function openFile(item) {
 
-    window.open(url, "_blank");
-
-}
-
-function sortFiles(type) {
-
-    currentSort = type;
-
-    render();
-
-}
-
-function formatSize(bytes) {
-
-    if (bytes === 0)
-        return "0 B";
-
-    const units = ["B", "KB", "MB", "GB"];
-
-    const i = Math.floor(
-        Math.log(bytes) / Math.log(1024)
+    window.open(
+        item.html_url,
+        "_blank"
     );
+
+}
+
+
+// مسیر فعلی
+function updatePath() {
+
+    pathElement.innerHTML =
+        "📁 " + currentPath;
+
+    backButton.style.display =
+        history.length
+            ? "inline-block"
+            : "none";
+
+}
+
+
+// برگشت
+function goBack() {
+
+    if (!history.length)
+        return;
+
+    const previous =
+        history.pop();
+
+    loadFiles(previous);
+
+}
+
+
+// جستجو
+searchInput.addEventListener(
+    "input",
+    () => render(allItems)
+);
+
+
+// پسوند فایل
+function getExtension(name) {
+
+    const parts =
+        name.split(".");
+
+    if (parts.length === 1)
+        return "فایل";
 
     return (
-        (bytes / Math.pow(1024, i)).toFixed(1)
-        + " "
-        + units[i]
+        "." +
+        parts.pop().toLowerCase()
     );
 
 }
 
-function getType(file) {
 
-    if (file.type)
-        return file.type.split("/")[1];
-
-    return "فایل";
-
-}
-
+// آیکون فایل
 function getIcon(name) {
 
     const ext =
-        name.split(".").pop().toLowerCase();
+        getExtension(name);
 
     const icons = {
 
-        js: "📜",
-        html: "🌐",
-        css: "🎨",
+        ".html": "🌐",
+        ".htm": "🌐",
 
-        json: "🗃️",
-        txt: "📄",
+        ".css": "🎨",
 
-        pdf: "📕",
+        ".js": "📜",
 
-        doc: "📘",
-        docx: "📘",
+        ".json": "🗃️",
 
-        xls: "📊",
-        xlsx: "📊",
+        ".txt": "📄",
 
-        ppt: "📙",
-        pptx: "📙",
+        ".md": "📝",
 
-        zip: "🗜️",
-        rar: "🗜️",
-        "7z": "🗜️",
+        ".pdf": "📕",
 
-        mp3: "🎵",
-        wav: "🎵",
+        ".jpg": "🖼️",
+        ".jpeg": "🖼️",
+        ".png": "🖼️",
+        ".gif": "🖼️",
+        ".webp": "🖼️",
+        ".svg": "🖼️",
 
-        mp4: "🎬",
-        mkv: "🎬",
-        avi: "🎬",
+        ".mp4": "🎬",
+        ".webm": "🎬",
+        ".mkv": "🎬",
 
-        exe: "⚙️",
+        ".mp3": "🎵",
+        ".wav": "🎵",
 
-        py: "🐍",
+        ".zip": "🗜️",
+        ".rar": "🗜️",
+        ".7z": "🗜️",
 
-        psd: "🖼️",
+        ".py": "🐍",
 
-        apk: "📱"
+        ".exe": "⚙️",
+
+        ".doc": "📘",
+        ".docx": "📘",
+
+        ".xls": "📊",
+        ".xlsx": "📊",
+
+        ".ppt": "📙",
+        ".pptx": "📙"
 
     };
 
@@ -519,8 +498,11 @@ function getIcon(name) {
 
 }
 
+
+// شروع
+loadFiles();
+
 </script>
 
 </body>
 </html>
-```
