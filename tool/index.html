@@ -1,10 +1,11 @@
+```html
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Tool Files</title>
+<title>SAY4s Tool Explorer</title>
 
 <style>
 * {
@@ -19,9 +20,9 @@ body {
 }
 
 header {
-    padding: 25px;
     background: #161b22;
     border-bottom: 1px solid #30363d;
+    padding: 25px;
 }
 
 header h1 {
@@ -43,11 +44,12 @@ header p {
 .toolbar {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
 
 .search {
     flex: 1;
+    min-width: 180px;
     padding: 13px 16px;
     border-radius: 10px;
     border: 1px solid #30363d;
@@ -65,9 +67,10 @@ button {
     border: 1px solid #30363d;
     background: #21262d;
     color: white;
+    padding: 11px 17px;
     border-radius: 10px;
-    padding: 10px 17px;
     cursor: pointer;
+    font-size: 14px;
 }
 
 button:hover {
@@ -76,8 +79,13 @@ button:hover {
 
 .path {
     color: #8b949e;
-    margin-bottom: 18px;
     font-size: 14px;
+    margin-bottom: 18px;
+}
+
+.back {
+    display: none;
+    margin-bottom: 15px;
 }
 
 .grid {
@@ -100,13 +108,23 @@ button:hover {
     border-color: #58a6ff;
 }
 
-.icon {
-    height: 130px;
+.preview {
+    height: 135px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 55px;
     background: #0d1117;
+    overflow: hidden;
+}
+
+.preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.icon {
+    font-size: 55px;
 }
 
 .info {
@@ -120,15 +138,15 @@ button:hover {
     text-overflow: ellipsis;
 }
 
-.type {
+.meta {
     margin-top: 7px;
     color: #8b949e;
     font-size: 12px;
 }
 
 .status {
-    padding: 50px;
     text-align: center;
+    padding: 60px 20px;
     color: #8b949e;
 }
 
@@ -136,19 +154,40 @@ button:hover {
     color: #ff7b72;
 }
 
-.back {
-    display: none;
-    margin-bottom: 15px;
+.html-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #238636;
+    color: white;
+    padding: 4px 7px;
+    border-radius: 6px;
+    font-size: 10px;
+}
+
+.preview-wrapper {
+    position: relative;
 }
 
 @media(max-width:600px) {
+
     .container {
         padding: 15px;
     }
 
     .grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
+
+    .toolbar {
+        flex-direction: column;
+    }
+
+    .search {
+        width: 100%;
+    }
+
 }
 </style>
 </head>
@@ -156,9 +195,15 @@ button:hover {
 <body>
 
 <header>
+
     <h1>📁 SAY4s / 1632 / tool</h1>
-    <p>فایل‌های موجود در پوشه Tool</p>
+
+    <p>
+        مرور فایل‌های موجود در پوشه Tool
+    </p>
+
 </header>
+
 
 <div class="container">
 
@@ -167,44 +212,80 @@ button:hover {
         <input
             id="search"
             class="search"
+            type="text"
             placeholder="🔍 جستجوی فایل..."
         >
 
-        <button onclick="loadFiles()">
+        <button onclick="refresh()">
             🔄 بروزرسانی
         </button>
 
     </div>
 
+
     <button
         id="backButton"
         class="back"
-        onclick="goBack()">
+        onclick="goBack()"
+    >
         ← برگشت
     </button>
 
-    <div id="path" class="path">
+
+    <div
+        id="path"
+        class="path"
+    >
         📁 tool
     </div>
 
-    <div id="files" class="grid">
+
+    <div
+        id="files"
+        class="grid"
+    >
+
         <div class="status">
-            در حال دریافت فایل‌ها...
+            ⏳ در حال دریافت فایل‌ها...
         </div>
+
     </div>
 
 </div>
 
+
 <script>
 
+/* ==============================
+   تنظیمات
+============================== */
+
 const OWNER = "SAY4s";
+
 const REPO = "1632";
+
 const BRANCH = "main";
 
-let currentPath = "tool";
+const GITHUB_PAGES =
+    "https://say4s.github.io/1632/";
+
+const ROOT_PATH = "tool";
+
+
+/* ==============================
+   متغیرها
+============================== */
+
+let currentPath = ROOT_PATH;
+
 let history = [];
 
 let allItems = [];
+
+
+/* ==============================
+   عناصر صفحه
+============================== */
 
 const filesContainer =
     document.getElementById("files");
@@ -219,7 +300,10 @@ const backButton =
     document.getElementById("backButton");
 
 
-// دریافت محتویات پوشه
+/* ==============================
+   دریافت فایل‌ها
+============================== */
+
 async function loadFiles(path = currentPath) {
 
     currentPath = path;
@@ -233,19 +317,34 @@ async function loadFiles(path = currentPath) {
     try {
 
         const api =
-            `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`;
+            `https://api.github.com/repos/${OWNER}/${REPO}/contents/${encodeURIComponent(path)}?ref=${BRANCH}`;
+
 
         const response =
             await fetch(api);
 
+
         if (!response.ok) {
+
             throw new Error(
-                "خطا در دریافت اطلاعات GitHub"
+                `GitHub API Error: ${response.status}`
             );
+
         }
+
 
         const data =
             await response.json();
+
+
+        if (!Array.isArray(data)) {
+
+            throw new Error(
+                "این مسیر یک پوشه نیست."
+            );
+
+        }
+
 
         allItems = data;
 
@@ -253,14 +352,22 @@ async function loadFiles(path = currentPath) {
 
         render(data);
 
-    } catch (error) {
+    }
+
+    catch (error) {
 
         filesContainer.innerHTML = `
+
             <div class="status error">
-                ❌ دریافت فایل‌ها با خطا مواجه شد
+
+                ❌ خطا در دریافت فایل‌ها
+
                 <br><br>
-                ${error.message}
+
+                ${escapeHtml(error.message)}
+
             </div>
+
         `;
 
     }
@@ -268,44 +375,69 @@ async function loadFiles(path = currentPath) {
 }
 
 
-// نمایش فایل‌ها
+/* ==============================
+   نمایش فایل‌ها
+============================== */
+
 function render(items) {
 
     const query =
         searchInput.value
-        .toLowerCase()
-        .trim();
+            .toLowerCase()
+            .trim();
+
 
     if (query) {
 
-        items = items.filter(item =>
-            item.name.toLowerCase().includes(query)
-        );
+        items =
+            items.filter(item =>
+                item.name
+                    .toLowerCase()
+                    .includes(query)
+            );
 
     }
 
-    // اول پوشه‌ها
+
+    /* پوشه‌ها اول */
+
     items.sort((a, b) => {
 
-        if (a.type === b.type)
-            return a.name.localeCompare(b.name);
+        if (a.type === b.type) {
 
-        return a.type === "dir" ? -1 : 1;
+            return a.name.localeCompare(
+                b.name,
+                "fa"
+            );
+
+        }
+
+        return a.type === "dir"
+            ? -1
+            : 1;
 
     });
+
 
     if (!items.length) {
 
         filesContainer.innerHTML = `
+
             <div class="status">
-                فایلی پیدا نشد
+
+                📭 فایلی پیدا نشد
+
             </div>
+
         `;
 
         return;
+
     }
 
+
     filesContainer.innerHTML = "";
+
 
     items.forEach(item => {
 
@@ -314,69 +446,251 @@ function render(items) {
 
         card.className = "card";
 
-        const icon =
+
+        /* ==================
+           Preview
+        ================== */
+
+        const previewWrapper =
             document.createElement("div");
 
-        icon.className = "icon";
+        previewWrapper.className =
+            "preview-wrapper";
 
-        icon.textContent =
-            item.type === "dir"
-                ? "📁"
-                : getIcon(item.name);
+
+        const preview =
+            document.createElement("div");
+
+        preview.className = "preview";
+
+
+        /* پوشه */
+
+        if (item.type === "dir") {
+
+            preview.innerHTML = `
+                <div class="icon">📁</div>
+            `;
+
+        }
+
+
+        /* تصویر */
+
+        else if (
+            isImage(item.name)
+        ) {
+
+            const img =
+                document.createElement("img");
+
+
+            img.src =
+                `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${item.path}`;
+
+
+            img.loading = "lazy";
+
+
+            img.onerror = () => {
+
+                preview.innerHTML = `
+                    <div class="icon">
+                        ${getIcon(item.name)}
+                    </div>
+                `;
+
+            };
+
+
+            preview.appendChild(img);
+
+        }
+
+
+        /* HTML */
+
+        else if (
+            isHTML(item.name)
+        ) {
+
+            preview.innerHTML = `
+                <div class="icon">🌐</div>
+            `;
+
+
+            const badge =
+                document.createElement("div");
+
+            badge.className =
+                "html-badge";
+
+            badge.textContent =
+                "اجرا می‌شود";
+
+            previewWrapper.appendChild(
+                badge
+            );
+
+        }
+
+
+        /* سایر فایل‌ها */
+
+        else {
+
+            preview.innerHTML = `
+                <div class="icon">
+                    ${getIcon(item.name)}
+                </div>
+            `;
+
+        }
+
+
+        previewWrapper.insertBefore(
+            preview,
+            previewWrapper.firstChild
+        );
+
+
+        /* ==================
+           اطلاعات
+        ================== */
 
         const info =
             document.createElement("div");
 
         info.className = "info";
 
+
         const name =
             document.createElement("div");
 
         name.className = "name";
 
-        name.textContent = item.name;
+        name.textContent =
+            item.name;
 
-        const type =
+
+        const meta =
             document.createElement("div");
 
-        type.className = "type";
+        meta.className = "meta";
 
-        type.textContent =
-            item.type === "dir"
-                ? "پوشه"
-                : getExtension(item.name);
+
+        if (item.type === "dir") {
+
+            meta.textContent =
+                "📁 پوشه";
+
+        }
+
+        else {
+
+            meta.textContent =
+                getExtension(item.name);
+
+        }
+
 
         info.appendChild(name);
-        info.appendChild(type);
 
-        card.appendChild(icon);
+        info.appendChild(meta);
+
+
+        card.appendChild(
+            previewWrapper
+        );
+
         card.appendChild(info);
 
-        card.onclick = () => {
 
-            if (item.type === "dir") {
+        /* ==================
+           کلیک
+        ================== */
 
-                history.push(currentPath);
+        card.addEventListener(
+            "click",
+            () => {
 
-                loadFiles(item.path);
+                if (item.type === "dir") {
 
-            } else {
+                    history.push(
+                        currentPath
+                    );
 
-                openFile(item);
+                    loadFiles(
+                        item.path
+                    );
+
+                }
+
+                else {
+
+                    openFile(item);
+
+                }
 
             }
+        );
 
-        };
 
-        filesContainer.appendChild(card);
+        filesContainer.appendChild(
+            card
+        );
 
     });
 
 }
 
 
-// باز کردن فایل
+/* ==============================
+   باز کردن فایل
+============================== */
+
 function openFile(item) {
+
+    const extension =
+        getExtension(item.name);
+
+
+    /*
+       اگر HTML بود:
+       از GitHub Pages اجرا می‌شود.
+    */
+
+    if (
+        extension === ".html" ||
+        extension === ".htm"
+    ) {
+
+        const pagePath =
+            item.path
+                .replace(/^tool\//, "");
+
+
+        const url =
+            GITHUB_PAGES +
+            "tool/" +
+            pagePath;
+
+
+        window.open(
+            url,
+            "_blank"
+        );
+
+
+        return;
+
+    }
+
+
+    /*
+       فایل‌های دیگر:
+       GitHub
+    */
 
     window.open(
         item.html_url,
@@ -386,11 +700,47 @@ function openFile(item) {
 }
 
 
-// مسیر فعلی
+/* ==============================
+   برگشت
+============================== */
+
+function goBack() {
+
+    if (!history.length)
+        return;
+
+
+    const previous =
+        history.pop();
+
+
+    loadFiles(previous);
+
+}
+
+
+/* ==============================
+   بروزرسانی
+============================== */
+
+function refresh() {
+
+    loadFiles(
+        currentPath
+    );
+
+}
+
+
+/* ==============================
+   مسیر
+============================== */
+
 function updatePath() {
 
-    pathElement.innerHTML =
+    pathElement.textContent =
         "📁 " + currentPath;
+
 
     backButton.style.display =
         history.length
@@ -400,49 +750,99 @@ function updatePath() {
 }
 
 
-// برگشت
-function goBack() {
+/* ==============================
+   جستجو
+============================== */
 
-    if (!history.length)
-        return;
-
-    const previous =
-        history.pop();
-
-    loadFiles(previous);
-
-}
-
-
-// جستجو
 searchInput.addEventListener(
     "input",
-    () => render(allItems)
+    () => {
+
+        render(allItems);
+
+    }
 );
 
 
-// پسوند فایل
-function getExtension(name) {
+/* ==============================
+   تشخیص HTML
+============================== */
 
-    const parts =
-        name.split(".");
+function isHTML(name) {
 
-    if (parts.length === 1)
-        return "فایل";
+    const ext =
+        getExtension(name);
 
     return (
-        "." +
-        parts.pop().toLowerCase()
+        ext === ".html" ||
+        ext === ".htm"
     );
 
 }
 
 
-// آیکون فایل
+/* ==============================
+   تشخیص تصویر
+============================== */
+
+function isImage(name) {
+
+    const ext =
+        getExtension(name);
+
+
+    return [
+
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".gif",
+        ".webp",
+        ".svg",
+        ".bmp",
+        ".ico"
+
+    ].includes(ext);
+
+}
+
+
+/* ==============================
+   پسوند
+============================== */
+
+function getExtension(name) {
+
+    const index =
+        name.lastIndexOf(".");
+
+
+    if (
+        index === -1 ||
+        index === name.length - 1
+    ) {
+
+        return "";
+
+    }
+
+
+    return name
+        .substring(index)
+        .toLowerCase();
+
+}
+
+
+/* ==============================
+   آیکون فایل
+============================== */
+
 function getIcon(name) {
 
     const ext =
         getExtension(name);
+
 
     const icons = {
 
@@ -494,15 +894,36 @@ function getIcon(name) {
 
     };
 
+
     return icons[ext] || "📄";
 
 }
 
 
-// شروع
+/* ==============================
+   جلوگیری از HTML Injection
+============================== */
+
+function escapeHtml(text) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent = text;
+
+    return div.innerHTML;
+
+}
+
+
+/* ==============================
+   شروع برنامه
+============================== */
+
 loadFiles();
 
 </script>
 
 </body>
 </html>
+```
