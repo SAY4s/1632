@@ -42,7 +42,15 @@ table.sheet td{padding:0}
 .q h3{font-size:1em}
 .size{display:inline-flex;align-items:center;gap:6px}
 .size button{padding:6px 12px;min-width:40px}
-@media print{@page{margin:12mm}.tools{display:none}body{background:#fff;color:#000}.head{background:#fff;color:#000}.head .s{color:#444}}
+.head{padding:3px 4px 4px;margin-bottom:4px;border-bottom-width:1px}
+.head .t{font-size:.85rem;font-weight:700;line-height:1.5}
+.head .s{font-size:.7rem;line-height:1.4}
+.foot{text-align:center;border-top:1px solid var(--accent);padding:3px 4px 0;margin-top:4px;background:var(--bg);font-size:.7rem;line-height:1.5;color:var(--muted)}
+.foot .ph{direction:ltr;unicode-bidi:isolate;font-weight:600;color:var(--text)}
+.q{padding:6px 12px;margin:5px 0;line-height:1.5}
+.q h3{margin:0 0 2px}
+.opt{padding:1px 8px;margin:0;gap:8px}
+@media print{@page{margin:10mm}.tools{display:none}body{background:#fff;color:#000}.head,.foot{background:#fff;color:#000}.head .s,.foot{color:#444}.foot .ph{color:#000}}
 </style>
 </head>
 <body>
@@ -67,6 +75,10 @@ table.sheet td{padding:0}
 <div class="s">مجتمع بزرگ آموزشی خوارزمی با مدیریت مهندس ساجدی با 20 سال سابقه درخشان</div>
 </div></td></tr></thead>
 <tbody><tr><td><div id="out"></div></td></tr></tbody>
+<tfoot><tr><td><div class="foot">
+<div class="ph"><span>09387405653</span> - <span>02832562070</span></div>
+<div>محمدیه بلوار مطهری نبش یاس 6 مجتمع بزرگ آموزشی خوارزمی</div>
+</div></td></tr></tfoot>
 </table>
 </main>
 <script>
@@ -113,7 +125,7 @@ $("go").onclick=()=>render($("ta").value);
 $("toggle").onclick=e=>{const h=document.body.classList.toggle("hide");e.target.textContent=h?"نمایش پاسخ‌ها":"پنهان‌کردن پاسخ‌ها"};
 $("print").onclick=()=>window.print();
 let fs=16;
-function setFs(v){fs=Math.min(32,Math.max(5,v));$("out").style.setProperty("--fs",fs+"px");$("fsv").textContent=fs}
+function setFs(v){fs=Math.min(32,Math.max(10,v));$("out").style.setProperty("--fs",fs+"px");$("fsv").textContent=fs}
 $("smaller").onclick=()=>setFs(fs-1);
 $("bigger").onclick=()=>setFs(fs+1);
 setFs(16);
