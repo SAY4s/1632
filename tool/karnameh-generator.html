@@ -116,6 +116,10 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:14px 0;}
 .footer{font-size:10.5px;color:#666;border-top:1px solid var(--line);padding-top:8px;margin-top:auto;}
 .footline1{display:flex;justify-content:space-between;margin-bottom:5px;}
 .footline2{display:flex;justify-content:space-between;background:var(--navy);color:#fff;border-radius:5px;padding:5px 10px;font-size:10px;}
+.card [contenteditable="true"]{cursor:text;border-radius:3px;transition:background .15s;}
+.card [contenteditable="true"]:hover{background:rgba(212,162,76,.14);}
+.card [contenteditable="true"]:focus{outline:1.5px dashed var(--gold);background:rgba(212,162,76,.1);}
+@media print{ .card [contenteditable="true"]:hover,.card [contenteditable="true"]:focus{background:none;outline:none;} }
 
 #batchContainer{display:none;}
 .printpage{page-break-after:always;}
@@ -173,6 +177,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:14px 0;}
 <div class="app">
   <div class="panel" id="panel">
     <h2>اطلاعات کارنامه <button class="gear" id="openSettings">⚙ پیش‌فرض سطح‌ها</button></h2>
+    <div class="hint" style="margin-bottom:10px;">💡 می‌تونی مستقیم روی متن‌های خود کارنامه (ویژگی‌ها، بخش‌های نیازمند کار، توضیحات، نام، تاریخ و...) کلیک کنی و ویرایش کنی.</div>
 
     <label class="filebtn" for="excelFile">📄 وارد کردن اطلاعات از اکسل<input type="file" id="excelFile" accept=".xlsx,.xls,.csv"></label>
     <button class="tmplbtn" id="tmplBtn">دانلود قالب نمونه اکسل</button>
@@ -304,7 +309,8 @@ function todayJalali(){
   return faNum(jy)+'/'+faNum(String(jm).padStart(2,'0'))+'/'+faNum(String(jd).padStart(2,'0'));
 }
 
-function buildCardHTML(rec){
+function buildCardHTML(rec, editable){
+  const ed = id => editable ? ` contenteditable="true" data-sync="${id}"` : '';
   const lvl = LVL_INFO[rec.level] || LVL_INFO.A;
   const vals = {};
   Object.keys(SK_META).forEach(k=>{ vals[k] = LVL_MAP[rec.skills[k]] || 2; });
@@ -347,13 +353,13 @@ function buildCardHTML(rec){
   return `
   ${ribbonSvg}
   <div class="head">
-    <div><h1>گزارش عملکرد</h1><div class="sub">${rec.course||''}</div><div class="inst">${rec.inst||''}</div></div>
+    <div><h1>گزارش عملکرد</h1><div class="sub"${ed('f_course')}>${rec.course||''}</div><div class="inst"${ed('f_inst')}>${rec.inst||''}</div></div>
     <div class="badge"><div class="shield" style="background:${lvl.color}">${lvl.name}</div><div class="lvl" style="background:${lvl.color}">سطح ${lvl.name}</div></div>
   </div>
   <div class="infobar">
-    <div class="it"><span>نام دانشجو:</span><b>${rec.name||'................'}</b></div>
-    <div class="it"><span>مدرس:</span><b>${rec.teacher||''}</b></div>
-    <div class="it"><span>تاریخ گزارش:</span><b>${rec.date||''}</b></div>
+    <div class="it"><span>نام دانشجو:</span><b${ed('f_name')}>${rec.name||'................'}</b></div>
+    <div class="it"><span>مدرس:</span><b${ed('f_teacher')}>${rec.teacher||''}</b></div>
+    <div class="it"><span>تاریخ گزارش:</span><b${ed('f_date')}>${rec.date||''}</b></div>
   </div>
   <div class="grid2">
     <div class="box"><h3>عملکرد کلی</h3>
@@ -362,17 +368,17 @@ function buildCardHTML(rec){
         <div class="legend">${legend}</div>
       </div>
     </div>
-    <div class="box"><h3>ویژگی‌های سطح ${lvl.name}</h3><ul class="featlist">${featHtml}</ul></div>
+    <div class="box"><h3>ویژگی‌های سطح ${lvl.name}</h3><ul class="featlist"${ed('f_features')}>${featHtml}</ul></div>
   </div>
   <div class="grid2">
     <div class="box"><h3>مهارت‌های ارزیابی‌شده</h3><div class="bars">${bars}</div></div>
-    <div class="box"><h3>بخش‌هایی که نیاز به کار بیشتری دارند</h3><ul class="gaplist">${gapHtml}</ul></div>
+    <div class="box"><h3>بخش‌هایی که نیاز به کار بیشتری دارند</h3><ul class="gaplist"${ed('f_gaps')}>${gapHtml}</ul></div>
   </div>
   <div class="box" style="margin-bottom:10px;"><h3>روند پیشرفت در طول دوره</h3><div class="progresswrap"><svg viewBox="0 0 700 130">${svgHtml}</svg></div></div>
-  <div class="notesbox"><b>توضیحات مدرس:</b><div style="margin-top:5px;">${rec.notes||''}</div></div>
+  <div class="notesbox"><b>توضیحات مدرس:</b><div style="margin-top:5px;"${ed('f_notes')}>${rec.notes||''}</div></div>
   <div class="footer">
     <div class="footline1"><span>${rec.inst||''}</span><span>مدرس دوره: ${rec.teacher||''}</span></div>
-    <div class="footline2"><span>📍 شعبه اصلی: ${rec.address||''}</span><span>☎ ${rec.phone||''}</span><span>★★ با مدیریت ${rec.manager||''} ★★</span></div>
+    <div class="footline2"><span>📍 شعبه اصلی: <b${ed('f_address')}>${rec.address||''}</b></span><span>☎ <b${ed('f_phone')}>${rec.phone||''}</b></span><span>★★ با مدیریت <b${ed('f_manager')}>${rec.manager||''}</b> ★★</span></div>
   </div>`;
 }
 
@@ -395,7 +401,28 @@ function recordFromForm(){
     notes: document.getElementById('f_notes').value
   };
 }
-function render(){ document.getElementById('card').innerHTML = buildCardHTML(recordFromForm()); }
+function render(){
+  document.getElementById('card').innerHTML = buildCardHTML(recordFromForm(), true);
+  bindCardEditableSync();
+}
+function bindCardEditableSync(){
+  document.querySelectorAll('#card [data-sync]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      const target = document.getElementById(el.dataset.sync);
+      if(!target) return;
+      if(el.tagName==='UL'){
+        const lines = Array.from(el.querySelectorAll('li')).map(li=>li.textContent.trim()).filter(Boolean);
+        target.value = lines.join('\n');
+      } else {
+        target.value = el.textContent.trim();
+      }
+      if(el.dataset.sync==='f_name'){
+        const name = target.value.trim() || '................';
+        if(el.textContent.trim()!==name && name==='................') el.textContent = name;
+      }
+    });
+  });
+}
 
 function applyLevelDefaultsToForm(l){
   const d = LEVEL_DEFAULTS[l];
