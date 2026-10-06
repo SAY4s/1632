@@ -277,33 +277,54 @@ button:disabled{background:#9aa79c;cursor:wait;}
 </div>
 
 <script>
-/* ===== پیکربندی: از خونه B5 یک گوگل‌شیت خونده می‌شه ===== */
+/* ===== پیکربندی: از خونه B5 یک گوگل‌شیت پابلیش‌شده خونده می‌شه ===== */
 /* فرمت محتوای خونه B5 (بدون فاصله اضافه):
    owner/repo,filename,branch,token
    مثال: SAY4s/1632,Data.json,main,github_pat_xxxxxxxxxx
-   شیت باید برای «هرکسی که لینک را دارد» قابل مشاهده باشد. */
-const SHEET_ID = '1X7-1l_iWxdVu-kn4YDviKxkKYBBAVBUT3gmke3ZK7-U';
+   شیت باید از مسیر File > Share > Publish to web پابلیش شده باشد. */
+const PUBLISHED_ID = '2PACX-1vRQwgHgBvIpgkVHaKENnJgnwdEYIrUSLqUH7s0_xUWkEx-GcMI_EPUiURR_OrNBA7fED984X6Ygam1I';
 const SHEET_GID = '0';
-const CONFIG_CELL = 'B5';
+const CONFIG_ROW = 5; // ردیف ۵
+const CONFIG_COL = 1; // ستون B (A=0, B=1)
+
+function parseCSV(str){
+  const rows = []; let row = []; let field = ''; let inQuotes = false;
+  for (let i=0;i<str.length;i++){
+    const c = str[i];
+    if (inQuotes){
+      if (c === '"'){ if (str[i+1] === '"'){ field+='"'; i++; } else inQuotes = false; }
+      else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field=''; }
+      else if (c === '\r') { /* skip */ }
+      else if (c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else field += c;
+    }
+  }
+  if (field.length || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
 
 let CONFIG = null;
 async function loadConfig(){
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}&range=${CONFIG_CELL}`;
+  const url = `https://docs.google.com/spreadsheets/d/e/${PUBLISHED_ID}/pub?output=csv&gid=${SHEET_GID}`;
   let res;
   try{
     res = await fetch(url);
   } catch(e){
-    throw new Error('اتصال به گوگل‌شیت برقرار نشد (Failed to fetch) — اینترنت/VPN یا دسترسی شبکه را بررسی کن');
+    throw new Error('اتصال به گوگل‌شیت برقرار نشد (Failed to fetch) — اینترنت/VPN را بررسی کن');
   }
-  if (res.redirected || !res.ok){
-    throw new Error('گوگل‌شیت در دسترس نیست — از Share باید روی «Anyone with the link: Viewer» تنظیم شده باشد');
+  if (!res.ok){
+    throw new Error('گوگل‌شیت در دسترس نیست — مطمئن شو از File > Share > Publish to web پابلیش شده');
   }
-  const bodyText = (await res.text()).trim();
-  if (bodyText.startsWith('<')){
-    throw new Error('گوگل‌شیت پابلیک نیست — اشتراک‌گذاری را روی «هرکسی که لینک را دارد: بیننده» بگذار');
+  const bodyText = await res.text();
+  if (bodyText.trim().startsWith('<')){
+    throw new Error('این لینک CSV برنمی‌گردونه — Publish to web را دوباره چک کن');
   }
-  const raw = bodyText.replace(/^"|"$/g,'').replace(/""/g,'"');
-  const [repoFull, fileName, branch, token] = raw.split(',').map(s=>s.trim());
+  const rows = parseCSV(bodyText);
+  const cell = (rows[CONFIG_ROW-1] && rows[CONFIG_ROW-1][CONFIG_COL]) ? rows[CONFIG_ROW-1][CONFIG_COL].trim() : '';
+  const [repoFull, fileName, branch, token] = cell.split(',').map(s=>s.trim());
   if (!repoFull || !fileName || !branch || !token) throw new Error('محتوای خونه B5 ناقص یا با فرمت اشتباه است');
   const [owner, repo] = repoFull.split('/');
   return { owner, repo, fileName, branch, token };
