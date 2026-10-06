@@ -1,191 +1,284 @@
-
+```html
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<title>SAY4s Tool Explorer</title>
+<title>GitHub File Explorer</title>
 
 <style>
-* {
-    box-sizing: border-box;
+*{
+    box-sizing:border-box;
 }
 
-body {
-    margin: 0;
-    font-family: Tahoma, Arial, sans-serif;
-    background: #0d1117;
-    color: #e6edf3;
+body{
+    margin:0;
+    font-family:Tahoma,Arial,sans-serif;
+    background:#0d1117;
+    color:#e6edf3;
 }
 
-header {
-    background: #161b22;
-    border-bottom: 1px solid #30363d;
-    padding: 25px;
+header{
+    padding:25px;
+    background:#161b22;
+    border-bottom:1px solid #30363d;
 }
 
-header h1 {
-    margin: 0 0 8px;
-    font-size: 25px;
+header h1{
+    margin:0 0 8px;
+    font-size:25px;
 }
 
-header p {
-    margin: 0;
-    color: #8b949e;
+header p{
+    margin:0;
+    color:#8b949e;
 }
 
-.container {
-    max-width: 1200px;
-    margin: auto;
-    padding: 25px;
+.container{
+    max-width:1300px;
+    margin:auto;
+    padding:25px;
 }
 
-.toolbar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 18px;
+.toolbar{
+    display:flex;
+    gap:10px;
+    margin-bottom:18px;
 }
 
-.search {
-    flex: 1;
-    min-width: 180px;
-    padding: 13px 16px;
-    border-radius: 10px;
-    border: 1px solid #30363d;
-    background: #161b22;
-    color: white;
-    outline: none;
-    font-size: 14px;
+.search{
+    flex:1;
+    padding:13px 16px;
+    border-radius:10px;
+    border:1px solid #30363d;
+    background:#161b22;
+    color:white;
+    outline:none;
+    font-size:14px;
 }
 
-.search:focus {
-    border-color: #58a6ff;
+.search:focus{
+    border-color:#58a6ff;
 }
 
-button {
-    border: 1px solid #30363d;
-    background: #21262d;
-    color: white;
-    padding: 11px 17px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 14px;
+button{
+    border:1px solid #30363d;
+    background:#21262d;
+    color:white;
+    padding:11px 17px;
+    border-radius:10px;
+    cursor:pointer;
 }
 
-button:hover {
-    background: #30363d;
+button:hover{
+    background:#30363d;
 }
 
-.path {
-    color: #8b949e;
-    font-size: 14px;
-    margin-bottom: 18px;
+.path{
+    color:#8b949e;
+    margin-bottom:15px;
+    font-size:14px;
 }
 
-.back {
-    display: none;
-    margin-bottom: 15px;
+.back{
+    display:none;
+    margin-bottom:15px;
 }
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    gap: 15px;
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+    gap:15px;
 }
 
-.card {
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 13px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: .2s;
+.card{
+    background:#161b22;
+    border:1px solid #30363d;
+    border-radius:13px;
+    overflow:hidden;
+    cursor:pointer;
+    transition:.2s;
 }
 
-.card:hover {
-    transform: translateY(-3px);
-    border-color: #58a6ff;
+.card:hover{
+    transform:translateY(-3px);
+    border-color:#58a6ff;
 }
 
-.preview {
-    height: 135px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #0d1117;
-    overflow: hidden;
+.preview{
+    height:145px;
+    background:#0d1117;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    position:relative;
 }
 
-.preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.preview img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
 }
 
-.icon {
-    font-size: 55px;
+.icon{
+    font-size:58px;
 }
 
-.info {
-    padding: 13px;
+.info{
+    padding:13px;
 }
 
-.name {
-    font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.name{
+    font-weight:bold;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
 }
 
-.meta {
-    margin-top: 7px;
-    color: #8b949e;
-    font-size: 12px;
+.meta{
+    margin-top:7px;
+    color:#8b949e;
+    font-size:12px;
 }
 
-.status {
-    text-align: center;
-    padding: 60px 20px;
-    color: #8b949e;
+.status{
+    text-align:center;
+    padding:70px 20px;
+    color:#8b949e;
 }
 
-.error {
-    color: #ff7b72;
+.error{
+    color:#ff7b72;
 }
 
-.html-badge {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    background: #238636;
-    color: white;
-    padding: 4px 7px;
-    border-radius: 6px;
-    font-size: 10px;
+.badge{
+    position:absolute;
+    top:8px;
+    left:8px;
+    padding:4px 7px;
+    border-radius:6px;
+    background:#238636;
+    color:white;
+    font-size:10px;
 }
 
-.preview-wrapper {
-    position: relative;
+.viewer{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:100;
+    background:#0d1117;
+    overflow:auto;
 }
 
-@media(max-width:600px) {
+.viewer-header{
+    height:65px;
+    background:#161b22;
+    border-bottom:1px solid #30363d;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 18px;
+    position:sticky;
+    top:0;
+    z-index:2;
+}
 
-    .container {
-        padding: 15px;
+.viewer-title{
+    flex:1;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.viewer-content{
+    padding:20px;
+    min-height:calc(100vh - 65px);
+}
+
+.viewer img{
+    max-width:100%;
+    max-height:80vh;
+    display:block;
+    margin:auto;
+}
+
+.viewer video{
+    width:100%;
+    max-height:80vh;
+}
+
+.viewer audio{
+    width:100%;
+}
+
+.viewer iframe{
+    width:100%;
+    height:85vh;
+    border:0;
+    background:white;
+}
+
+.viewer pre{
+    direction:ltr;
+    text-align:left;
+    white-space:pre-wrap;
+    word-break:break-word;
+    background:#161b22;
+    border:1px solid #30363d;
+    border-radius:10px;
+    padding:20px;
+    overflow:auto;
+    line-height:1.6;
+}
+
+.file-info{
+    max-width:700px;
+    margin:50px auto;
+    background:#161b22;
+    border:1px solid #30363d;
+    border-radius:15px;
+    padding:25px;
+}
+
+.file-info h2{
+    margin-top:0;
+}
+
+.file-info-row{
+    padding:10px 0;
+    border-bottom:1px solid #30363d;
+}
+
+.download{
+    display:inline-block;
+    margin-top:20px;
+    padding:12px 18px;
+    border-radius:9px;
+    background:#238636;
+    color:white;
+    text-decoration:none;
+}
+
+.download:hover{
+    background:#2ea043;
+}
+
+@media(max-width:600px){
+
+    .container{
+        padding:15px;
     }
 
-    .grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
+    .grid{
+        grid-template-columns:repeat(2,1fr);
+        gap:10px;
     }
 
-    .toolbar {
-        flex-direction: column;
-    }
-
-    .search {
-        width: 100%;
+    .toolbar{
+        flex-direction:column;
     }
 
 }
@@ -195,15 +288,9 @@ button:hover {
 <body>
 
 <header>
-
     <h1>📁 SAY4s / 1632 / tool</h1>
-
-    <p>
-        مرور فایل‌های موجود در پوشه Tool
-    </p>
-
+    <p>مرورگر فایل GitHub</p>
 </header>
-
 
 <div class="container">
 
@@ -212,7 +299,6 @@ button:hover {
         <input
             id="search"
             class="search"
-            type="text"
             placeholder="🔍 جستجوی فایل..."
         >
 
@@ -222,28 +308,18 @@ button:hover {
 
     </div>
 
-
     <button
-        id="backButton"
+        id="back"
         class="back"
-        onclick="goBack()"
-    >
+        onclick="goBack()">
         ← برگشت
     </button>
 
-
-    <div
-        id="path"
-        class="path"
-    >
+    <div id="path" class="path">
         📁 tool
     </div>
 
-
-    <div
-        id="files"
-        class="grid"
-    >
+    <div id="files" class="grid">
 
         <div class="status">
             ⏳ در حال دریافت فایل‌ها...
@@ -254,11 +330,46 @@ button:hover {
 </div>
 
 
+<!-- Viewer -->
+
+<div id="viewer" class="viewer">
+
+    <div class="viewer-header">
+
+        <button onclick="closeViewer()">
+            ✕ بستن
+        </button>
+
+        <div
+            id="viewerTitle"
+            class="viewer-title">
+        </div>
+
+        <a
+            id="githubLink"
+            target="_blank"
+            style="text-decoration:none"
+        >
+            <button>
+                GitHub
+            </button>
+        </a>
+
+    </div>
+
+    <div
+        id="viewerContent"
+        class="viewer-content">
+    </div>
+
+</div>
+
+
 <script>
 
-/* ==============================
+/* =========================
    تنظیمات
-============================== */
+========================= */
 
 const OWNER = "SAY4s";
 
@@ -266,85 +377,106 @@ const REPO = "1632";
 
 const BRANCH = "main";
 
-const GITHUB_PAGES =
-    "https://say4s.github.io/1632/";
-
-const ROOT_PATH = "tool";
+const ROOT = "tool";
 
 
-/* ==============================
+/* =========================
    متغیرها
-============================== */
+========================= */
 
-let currentPath = ROOT_PATH;
+let currentPath = ROOT;
 
 let history = [];
 
 let allItems = [];
 
 
-/* ==============================
-   عناصر صفحه
-============================== */
+/* =========================
+   عناصر
+========================= */
 
-const filesContainer =
+const files =
     document.getElementById("files");
 
-const searchInput =
+const search =
     document.getElementById("search");
 
-const pathElement =
+const path =
     document.getElementById("path");
 
-const backButton =
-    document.getElementById("backButton");
+const back =
+    document.getElementById("back");
+
+const viewer =
+    document.getElementById("viewer");
+
+const viewerContent =
+    document.getElementById("viewerContent");
+
+const viewerTitle =
+    document.getElementById("viewerTitle");
+
+const githubLink =
+    document.getElementById("githubLink");
 
 
-/* ==============================
-   دریافت فایل‌ها
-============================== */
+/* =========================
+   URLهای GitHub
+========================= */
 
-async function loadFiles(path = currentPath) {
+function rawURL(item){
 
-    currentPath = path;
+    return `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${item.path}`;
 
-    filesContainer.innerHTML = `
+}
+
+function githubURL(item){
+
+    return item.html_url;
+
+}
+
+
+/* =========================
+   دریافت پوشه
+========================= */
+
+async function loadFiles(folder=currentPath){
+
+    currentPath = folder;
+
+    files.innerHTML = `
         <div class="status">
-            ⏳ در حال دریافت فایل‌ها...
+            ⏳ در حال دریافت...
         </div>
     `;
 
-    try {
+    try{
 
-        const api =
-            `https://api.github.com/repos/${OWNER}/${REPO}/contents/${encodeURIComponent(path)}?ref=${BRANCH}`;
-
+        const url =
+            `https://api.github.com/repos/${OWNER}/${REPO}/contents/${encodeURIComponent(folder)}?ref=${BRANCH}`;
 
         const response =
-            await fetch(api);
+            await fetch(url);
 
-
-        if (!response.ok) {
+        if(!response.ok){
 
             throw new Error(
-                `GitHub API Error: ${response.status}`
+                "خطا در ارتباط با GitHub"
             );
 
         }
-
 
         const data =
             await response.json();
 
-
-        if (!Array.isArray(data)) {
+        if(!Array.isArray(data)){
 
             throw new Error(
-                "این مسیر یک پوشه نیست."
+                "مسیر موردنظر پوشه نیست."
             );
 
         }
-
 
         allItems = data;
 
@@ -352,22 +484,12 @@ async function loadFiles(path = currentPath) {
 
         render(data);
 
-    }
+    }catch(error){
 
-    catch (error) {
-
-        filesContainer.innerHTML = `
-
+        files.innerHTML = `
             <div class="status error">
-
-                ❌ خطا در دریافت فایل‌ها
-
-                <br><br>
-
-                ${escapeHtml(error.message)}
-
+                ❌ ${escapeHTML(error.message)}
             </div>
-
         `;
 
     }
@@ -375,35 +497,31 @@ async function loadFiles(path = currentPath) {
 }
 
 
-/* ==============================
+/* =========================
    نمایش فایل‌ها
-============================== */
+========================= */
 
-function render(items) {
+function render(items){
 
-    const query =
-        searchInput.value
-            .toLowerCase()
-            .trim();
+    const q =
+        search.value
+        .trim()
+        .toLowerCase();
 
-
-    if (query) {
+    if(q){
 
         items =
             items.filter(item =>
                 item.name
-                    .toLowerCase()
-                    .includes(query)
+                .toLowerCase()
+                .includes(q)
             );
 
     }
 
+    items.sort((a,b)=>{
 
-    /* پوشه‌ها اول */
-
-    items.sort((a, b) => {
-
-        if (a.type === b.type) {
+        if(a.type===b.type){
 
             return a.name.localeCompare(
                 b.name,
@@ -412,96 +530,67 @@ function render(items) {
 
         }
 
-        return a.type === "dir"
-            ? -1
-            : 1;
+        return a.type==="dir" ? -1 : 1;
 
     });
 
+    if(!items.length){
 
-    if (!items.length) {
-
-        filesContainer.innerHTML = `
-
+        files.innerHTML = `
             <div class="status">
-
                 📭 فایلی پیدا نشد
-
             </div>
-
         `;
 
         return;
 
     }
 
+    files.innerHTML = "";
 
-    filesContainer.innerHTML = "";
-
-
-    items.forEach(item => {
+    items.forEach(item=>{
 
         const card =
             document.createElement("div");
 
-        card.className = "card";
-
-
-        /* ==================
-           Preview
-        ================== */
-
-        const previewWrapper =
-            document.createElement("div");
-
-        previewWrapper.className =
-            "preview-wrapper";
+        card.className="card";
 
 
         const preview =
             document.createElement("div");
 
-        preview.className = "preview";
+        preview.className="preview";
 
 
         /* پوشه */
 
-        if (item.type === "dir") {
+        if(item.type==="dir"){
 
-            preview.innerHTML = `
-                <div class="icon">📁</div>
-            `;
+            preview.innerHTML =
+                `<div class="icon">📁</div>`;
 
         }
 
 
         /* تصویر */
 
-        else if (
-            isImage(item.name)
-        ) {
+        else if(isImage(item.name)){
 
             const img =
                 document.createElement("img");
 
+            img.src = rawURL(item);
 
-            img.src =
-                `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${item.path}`;
+            img.loading="lazy";
 
+            img.onerror=()=>{
 
-            img.loading = "lazy";
-
-
-            img.onerror = () => {
-
-                preview.innerHTML = `
-                    <div class="icon">
+                preview.innerHTML =
+                    `<div class="icon">
                         ${getIcon(item.name)}
-                    </div>
-                `;
+                    </div>`;
 
             };
-
 
             preview.appendChild(img);
 
@@ -510,86 +599,90 @@ function render(items) {
 
         /* HTML */
 
-        else if (
-            isHTML(item.name)
-        ) {
+        else if(isHTML(item.name)){
 
-            preview.innerHTML = `
-                <div class="icon">🌐</div>
-            `;
+            preview.innerHTML =
+                `<div class="icon">🌐</div>`;
+
+            preview.innerHTML +=
+                `<div class="badge">
+                    HTML قابل اجرا
+                </div>`;
+
+        }
 
 
-            const badge =
-                document.createElement("div");
+        /* ویدئو */
 
-            badge.className =
-                "html-badge";
+        else if(isVideo(item.name)){
 
-            badge.textContent =
-                "اجرا می‌شود";
+            preview.innerHTML =
+                `<div class="icon">🎬</div>`;
 
-            previewWrapper.appendChild(
-                badge
-            );
+        }
+
+
+        /* صوت */
+
+        else if(isAudio(item.name)){
+
+            preview.innerHTML =
+                `<div class="icon">🎵</div>`;
+
+        }
+
+
+        /* PDF */
+
+        else if(isPDF(item.name)){
+
+            preview.innerHTML =
+                `<div class="icon">📕</div>`;
 
         }
 
 
         /* سایر فایل‌ها */
 
-        else {
+        else{
 
-            preview.innerHTML = `
-                <div class="icon">
+            preview.innerHTML =
+                `<div class="icon">
                     ${getIcon(item.name)}
-                </div>
-            `;
+                </div>`;
 
         }
 
 
-        previewWrapper.insertBefore(
-            preview,
-            previewWrapper.firstChild
-        );
-
-
-        /* ==================
-           اطلاعات
-        ================== */
-
         const info =
             document.createElement("div");
 
-        info.className = "info";
+        info.className="info";
 
 
         const name =
             document.createElement("div");
 
-        name.className = "name";
+        name.className="name";
 
-        name.textContent =
-            item.name;
+        name.textContent=item.name;
 
 
         const meta =
             document.createElement("div");
 
-        meta.className = "meta";
+        meta.className="meta";
 
 
-        if (item.type === "dir") {
+        if(item.type==="dir"){
 
-            meta.textContent =
-                "📁 پوشه";
+            meta.textContent="📁 پوشه";
 
-        }
-
-        else {
+        }else{
 
             meta.textContent =
-                getExtension(item.name);
+                getExtension(item.name) ||
+                "فایل";
 
         }
 
@@ -599,200 +692,350 @@ function render(items) {
         info.appendChild(meta);
 
 
-        card.appendChild(
-            previewWrapper
-        );
+        card.appendChild(preview);
 
         card.appendChild(info);
 
 
-        /* ==================
-           کلیک
-        ================== */
+        card.onclick=()=>{
 
-        card.addEventListener(
-            "click",
-            () => {
+            if(item.type==="dir"){
 
-                if (item.type === "dir") {
+                history.push(currentPath);
 
-                    history.push(
-                        currentPath
-                    );
+                loadFiles(item.path);
 
-                    loadFiles(
-                        item.path
-                    );
+            }else{
 
-                }
-
-                else {
-
-                    openFile(item);
-
-                }
+                openFile(item);
 
             }
-        );
+
+        };
 
 
-        filesContainer.appendChild(
-            card
-        );
+        files.appendChild(card);
 
     });
 
 }
 
 
-/* ==============================
+/* =========================
    باز کردن فایل
-============================== */
+========================= */
 
-function openFile(item) {
+async function openFile(item){
 
-    const extension =
+    const ext =
         getExtension(item.name);
 
+    viewerTitle.textContent =
+        item.name;
 
-    /*
-       اگر HTML بود:
-       از GitHub Pages اجرا می‌شود.
-    */
+    githubLink.href =
+        githubURL(item);
 
-    if (
-        extension === ".html" ||
-        extension === ".htm"
-    ) {
+    viewerContent.innerHTML = `
+        <div class="status">
+            ⏳ در حال باز کردن فایل...
+        </div>
+    `;
 
-        const pagePath =
-            item.path
-                .replace(/^tool\//, "");
-
-
-        const url =
-            GITHUB_PAGES +
-            "tool/" +
-            pagePath;
+    viewer.style.display="block";
 
 
-        window.open(
-            url,
-            "_blank"
-        );
+    /* =====================
+       HTML
+    ===================== */
 
+    if(isHTML(item.name)){
+
+        /*
+        اجرای واقعی HTML از GitHub Pages
+        */
+
+        const pageURL =
+            "https://say4s.github.io/1632/" +
+            item.path;
+
+        viewerContent.innerHTML = `
+            <iframe
+                src="${pageURL}">
+            </iframe>
+        `;
 
         return;
 
     }
 
 
-    /*
-       فایل‌های دیگر:
-       GitHub
-    */
+    /* =====================
+       تصویر
+    ===================== */
 
-    window.open(
-        item.html_url,
-        "_blank"
-    );
+    if(isImage(item.name)){
+
+        viewerContent.innerHTML = `
+            <img
+                src="${rawURL(item)}"
+                alt="${escapeHTML(item.name)}">
+        `;
+
+        return;
+
+    }
+
+
+    /* =====================
+       ویدئو
+    ===================== */
+
+    if(isVideo(item.name)){
+
+        viewerContent.innerHTML = `
+            <video
+                controls
+                autoplay
+                src="${rawURL(item)}">
+            </video>
+        `;
+
+        return;
+
+    }
+
+
+    /* =====================
+       صوت
+    ===================== */
+
+    if(isAudio(item.name)){
+
+        viewerContent.innerHTML = `
+            <div class="file-info">
+
+                <h2>🎵 ${escapeHTML(item.name)}</h2>
+
+                <audio
+                    controls
+                    src="${rawURL(item)}">
+                </audio>
+
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    /* =====================
+       PDF
+    ===================== */
+
+    if(isPDF(item.name)){
+
+        viewerContent.innerHTML = `
+            <iframe
+                src="${rawURL(item)}">
+            </iframe>
+        `;
+
+        return;
+
+    }
+
+
+    /* =====================
+       فایل‌های متنی / کد
+    ===================== */
+
+    if(isText(item.name)){
+
+        try{
+
+            const response =
+                await fetch(rawURL(item));
+
+            const text =
+                await response.text();
+
+            viewerContent.innerHTML = `
+                <pre>${escapeHTML(text)}</pre>
+            `;
+
+        }catch(error){
+
+            showDownload(item);
+
+        }
+
+        return;
+
+    }
+
+
+    /* =====================
+       فایل ناشناخته
+    ===================== */
+
+    showDownload(item);
 
 }
 
 
-/* ==============================
+/* =========================
+   فایل دانلودی
+========================= */
+
+function showDownload(item){
+
+    const size =
+        item.size
+        ? formatSize(item.size)
+        : "نامشخص";
+
+    viewerContent.innerHTML = `
+
+        <div class="file-info">
+
+            <h2>
+                ${getIcon(item.name)}
+                ${escapeHTML(item.name)}
+            </h2>
+
+            <div class="file-info-row">
+                نوع:
+                ${getExtension(item.name) || "نامشخص"}
+            </div>
+
+            <div class="file-info-row">
+                حجم:
+                ${size}
+            </div>
+
+            <div class="file-info-row">
+                مسیر:
+                ${escapeHTML(item.path)}
+            </div>
+
+            <a
+                class="download"
+                href="${rawURL(item)}"
+                target="_blank"
+                download>
+                ⬇️ باز کردن / دانلود فایل
+            </a>
+
+        </div>
+    `;
+
+}
+
+
+/* =========================
+   بستن Viewer
+========================= */
+
+function closeViewer(){
+
+    viewer.style.display="none";
+
+    viewerContent.innerHTML="";
+
+}
+
+
+/* =========================
    برگشت
-============================== */
+========================= */
 
-function goBack() {
+function goBack(){
 
-    if (!history.length)
+    if(!history.length)
         return;
-
 
     const previous =
         history.pop();
-
 
     loadFiles(previous);
 
 }
 
 
-/* ==============================
+/* =========================
    بروزرسانی
-============================== */
+========================= */
 
-function refresh() {
+function refresh(){
 
-    loadFiles(
-        currentPath
-    );
+    loadFiles(currentPath);
 
 }
 
 
-/* ==============================
+/* =========================
    مسیر
-============================== */
+========================= */
 
-function updatePath() {
+function updatePath(){
 
-    pathElement.textContent =
+    path.textContent =
         "📁 " + currentPath;
 
-
-    backButton.style.display =
+    back.style.display =
         history.length
-            ? "inline-block"
-            : "none";
+        ? "inline-block"
+        : "none";
 
 }
 
 
-/* ==============================
+/* =========================
    جستجو
-============================== */
+========================= */
 
-searchInput.addEventListener(
+search.addEventListener(
     "input",
-    () => {
-
-        render(allItems);
-
-    }
+    ()=>render(allItems)
 );
 
 
-/* ==============================
-   تشخیص HTML
-============================== */
+/* =========================
+   تشخیص فرمت‌ها
+========================= */
 
-function isHTML(name) {
+function getExtension(name){
 
-    const ext =
-        getExtension(name);
+    const i =
+        name.lastIndexOf(".");
 
-    return (
-        ext === ".html" ||
-        ext === ".htm"
+    if(i===-1)
+        return "";
+
+    return name
+        .substring(i)
+        .toLowerCase();
+
+}
+
+
+function isHTML(name){
+
+    return [
+        ".html",
+        ".htm"
+    ].includes(
+        getExtension(name)
     );
 
 }
 
 
-/* ==============================
-   تشخیص تصویر
-============================== */
-
-function isImage(name) {
-
-    const ext =
-        getExtension(name);
-
+function isImage(name){
 
     return [
-
         ".jpg",
         ".jpeg",
         ".png",
@@ -800,125 +1043,231 @@ function isImage(name) {
         ".webp",
         ".svg",
         ".bmp",
-        ".ico"
-
-    ].includes(ext);
-
-}
-
-
-/* ==============================
-   پسوند
-============================== */
-
-function getExtension(name) {
-
-    const index =
-        name.lastIndexOf(".");
-
-
-    if (
-        index === -1 ||
-        index === name.length - 1
-    ) {
-
-        return "";
-
-    }
-
-
-    return name
-        .substring(index)
-        .toLowerCase();
+        ".ico",
+        ".avif"
+    ].includes(
+        getExtension(name)
+    );
 
 }
 
 
-/* ==============================
-   آیکون فایل
-============================== */
+function isVideo(name){
 
-function getIcon(name) {
+    return [
+        ".mp4",
+        ".webm",
+        ".ogg",
+        ".ogv",
+        ".mov",
+        ".m4v"
+    ].includes(
+        getExtension(name)
+    );
+
+}
+
+
+function isAudio(name){
+
+    return [
+        ".mp3",
+        ".wav",
+        ".ogg",
+        ".m4a",
+        ".aac",
+        ".flac"
+    ].includes(
+        getExtension(name)
+    );
+
+}
+
+
+function isPDF(name){
+
+    return getExtension(name)===".pdf";
+
+}
+
+
+/* =========================
+   فایل متنی
+========================= */
+
+function isText(name){
+
+    return [
+
+        ".txt",
+        ".md",
+        ".json",
+        ".js",
+        ".css",
+        ".html",
+        ".htm",
+        ".xml",
+        ".csv",
+        ".yaml",
+        ".yml",
+        ".py",
+        ".java",
+        ".c",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".php",
+        ".sql",
+        ".sh",
+        ".bat",
+        ".ps1",
+        ".ini",
+        ".conf",
+        ".log",
+        ".jsx",
+        ".tsx",
+        ".ts",
+        ".vue"
+
+    ].includes(
+        getExtension(name)
+    );
+
+}
+
+
+/* =========================
+   آیکون
+========================= */
+
+function getIcon(name){
 
     const ext =
         getExtension(name);
 
+    const icons={
 
-    const icons = {
+        ".html":"🌐",
+        ".htm":"🌐",
 
-        ".html": "🌐",
-        ".htm": "🌐",
+        ".css":"🎨",
 
-        ".css": "🎨",
+        ".js":"📜",
+        ".jsx":"📜",
 
-        ".js": "📜",
+        ".ts":"📘",
+        ".tsx":"📘",
 
-        ".json": "🗃️",
+        ".json":"🗃️",
 
-        ".txt": "📄",
+        ".txt":"📄",
+        ".md":"📝",
 
-        ".md": "📝",
+        ".pdf":"📕",
 
-        ".pdf": "📕",
+        ".jpg":"🖼️",
+        ".jpeg":"🖼️",
+        ".png":"🖼️",
+        ".gif":"🖼️",
+        ".webp":"🖼️",
+        ".svg":"🖼️",
 
-        ".jpg": "🖼️",
-        ".jpeg": "🖼️",
-        ".png": "🖼️",
-        ".gif": "🖼️",
-        ".webp": "🖼️",
-        ".svg": "🖼️",
+        ".mp4":"🎬",
+        ".webm":"🎬",
+        ".mov":"🎬",
+        ".mkv":"🎬",
 
-        ".mp4": "🎬",
-        ".webm": "🎬",
-        ".mkv": "🎬",
+        ".mp3":"🎵",
+        ".wav":"🎵",
+        ".flac":"🎵",
 
-        ".mp3": "🎵",
-        ".wav": "🎵",
+        ".zip":"🗜️",
+        ".rar":"🗜️",
+        ".7z":"🗜️",
 
-        ".zip": "🗜️",
-        ".rar": "🗜️",
-        ".7z": "🗜️",
+        ".py":"🐍",
 
-        ".py": "🐍",
+        ".java":"☕",
 
-        ".exe": "⚙️",
+        ".php":"🐘",
 
-        ".doc": "📘",
-        ".docx": "📘",
+        ".sql":"🗄️",
 
-        ".xls": "📊",
-        ".xlsx": "📊",
+        ".exe":"⚙️",
 
-        ".ppt": "📙",
-        ".pptx": "📙"
+        ".apk":"📱",
+
+        ".iso":"💿",
+
+        ".doc":"📘",
+        ".docx":"📘",
+
+        ".xls":"📊",
+        ".xlsx":"📊",
+
+        ".ppt":"📙",
+        ".pptx":"📙"
 
     };
-
 
     return icons[ext] || "📄";
 
 }
 
 
-/* ==============================
-   جلوگیری از HTML Injection
-============================== */
+/* =========================
+   حجم فایل
+========================= */
 
-function escapeHtml(text) {
+function formatSize(bytes){
+
+    if(!bytes)
+        return "0 B";
+
+    const units=[
+        "B",
+        "KB",
+        "MB",
+        "GB",
+        "TB"
+    ];
+
+    const i =
+        Math.floor(
+            Math.log(bytes) /
+            Math.log(1024)
+        );
+
+    return (
+        (bytes /
+        Math.pow(1024,i))
+        .toFixed(1)
+        + " "
+        + units[i]
+    );
+
+}
+
+
+/* =========================
+   امنیت
+========================= */
+
+function escapeHTML(text){
 
     const div =
         document.createElement("div");
 
-    div.textContent = text;
+    div.textContent=text;
 
     return div.innerHTML;
 
 }
 
 
-/* ==============================
-   شروع برنامه
-============================== */
+/* =========================
+   شروع
+========================= */
 
 loadFiles();
 
@@ -926,3 +1275,4 @@ loadFiles();
 
 </body>
 </html>
+```
