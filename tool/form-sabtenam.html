@@ -277,13 +277,26 @@ button:disabled{background:#9aa79c;cursor:wait;}
 </div>
 
 <script>
-/* ===== پیکربندی ذخیره‌سازی در گیت‌هاب — این بخش را قبل از استفاده تکمیل کنید ===== */
-const CONFIG = {
-  GITHUB_TOKEN: 'YOUR_GITHUB_TOKEN', // توکن با دسترسی repo
-  REPO_OWNER:   'your-username',
-  REPO_NAME:    'your-repo',
-  FOLDER:       'submissions'
-};
+/* ===== پیکربندی: از خونه B5 یک گوگل‌شیت خونده می‌شه ===== */
+/* فرمت محتوای خونه B5 (بدون فاصله اضافه):
+   owner/repo,filename,branch,token
+   مثال: SAY4s/1632,Data.json,main,github_pat_xxxxxxxxxx
+   شیت باید برای «هرکسی که لینک را دارد» قابل مشاهده باشد. */
+const SHEET_ID = '1X7-1l_iWxdVu-kn4YDviKxkKYBBAVBUT3gmke3ZK7-U';
+const SHEET_GID = '0';
+const CONFIG_CELL = 'B5';
+
+let CONFIG = null;
+async function loadConfig(){
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}&range=${CONFIG_CELL}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('خواندن تنظیمات از گوگل‌شیت ناموفق بود');
+  const raw = (await res.text()).trim().replace(/^"|"$/g,'').replace(/""/g,'"');
+  const [repoFull, fileName, branch, token] = raw.split(',').map(s=>s.trim());
+  if (!repoFull || !fileName || !branch || !token) throw new Error('محتوای خونه B5 ناقص است');
+  const [owner, repo] = repoFull.split('/');
+  return { owner, repo, fileName, branch, token };
+}
 /* =================================================================== */
 
 const faMonths = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
@@ -367,24 +380,46 @@ function validate(){
   return ok;
 }
 
+function b64EncodeUtf8(str){
+  return btoa(unescape(encodeURIComponent(str)));
+}
+function b64DecodeUtf8(str){
+  return decodeURIComponent(escape(atob(str)));
+}
+
 async function submitToGithub(data){
-  const safeId = data.nationalId || 'ثبت‌نام';
-  const fileName = `${CONFIG.FOLDER}/${safeId}_${Date.now()}.json`;
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
-  const url = `https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/contents/${fileName}`;
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `token ${CONFIG.GITHUB_TOKEN}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      message: `ثبت‌نام جدید: ${data.firstName} ${data.lastName}`,
-      content: content
-    })
-  });
-  if (!res.ok) throw new Error('خطا در ارتباط با سرور ذخیره‌سازی');
-  return res.json();
+  if (!CONFIG) CONFIG = await loadConfig();
+  const apiUrl = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.fileName}`;
+  const headers = {
+    'Authorization': `token ${CONFIG.token}`,
+    'Content-Type': 'application/json'
+  };
+
+  // خواندن فایل فعلی برای افزودن رکورد جدید به آرایه
+  let list = [];
+  let sha = undefined;
+  const getRes = await fetch(`${apiUrl}?ref=${CONFIG.branch}`, { headers });
+  if (getRes.status === 200){
+    const file = await getRes.json();
+    sha = file.sha;
+    try{ list = JSON.parse(b64DecodeUtf8(file.content.replace(/\n/g,''))); }
+    catch(e){ list = []; }
+    if (!Array.isArray(list)) list = [];
+  } else if (getRes.status !== 404){
+    throw new Error('خطا در خواندن فایل اطلاعات از گیت‌هاب');
+  }
+
+  list.push(data);
+  const body = {
+    message: `ثبت‌نام جدید: ${data.firstName} ${data.lastName}`,
+    content: b64EncodeUtf8(JSON.stringify(list, null, 2)),
+    branch: CONFIG.branch
+  };
+  if (sha) body.sha = sha;
+
+  const putRes = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!putRes.ok) throw new Error('خطا در ذخیره‌سازی در گیت‌هاب');
+  return putRes.json();
 }
 
 function showReceipt(data){
@@ -450,9 +485,6 @@ document.getElementById('regForm').addEventListener('submit', async (e)=>{
   const btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.textContent = 'در حال ثبت...';
   try{
-    if (CONFIG.GITHUB_TOKEN === 'YOUR_GITHUB_TOKEN'){
-      throw new Error('تنظیمات گیت‌هاب کامل نشده است (بالای فایل را ویرایش کنید)');
-    }
     await submitToGithub(data);
     statusBox.className = 'status ok';
     statusBox.textContent = 'ثبت‌نام با موفقیت انجام شد.';
