@@ -150,10 +150,14 @@ button:disabled{background:#9aa79c;cursor:wait;}
 .receipt-row .v{font-weight:600;text-align:left;}
 
 @media print{
-  body{background:#fff;padding:0;}
-  .frame > *{visibility:hidden;}
-  #receipt, #receipt *{visibility:visible;}
-  #receipt{position:absolute;inset:0;margin:0;}
+  body{background:#fff;padding:0;margin:0;}
+  .page{max-width:none;margin:0;}
+  .frame{border:none;padding:18px;background:#fff;}
+  .frame::before{display:none;}
+  .corner{display:none;}
+  .title-block{display:none;}
+  #regForm{display:none;}
+  #receipt{margin-top:0;padding-top:0;}
   #printBtn{display:none;}
 }
 @media (max-width:480px){
