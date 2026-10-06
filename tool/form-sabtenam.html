@@ -3,20 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>فرم ثبت‌نام</title>
+<title>فرم پیش‌ثبت‌نام</title>
 <style>
-@font-face {
-  font-family: 'Vazirmatn';
-  src: local('Vazirmatn');
-}
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap');
 :root{
-  --ink:#1c2a20;
-  --paper:#f6f2e9;
-  --panel:#ffffff;
+  --ink:#241f16;
+  --paper:#e7decb;
+  --sheet:#faf6ea;
+  --line:#c9bf9f;
+  --gold:#9c7a24;
   --forest:#2c4a34;
   --forest-dark:#1c3323;
-  --gold:#b98b2a;
-  --line:#d8d0bd;
   --err:#a4342a;
 }
 *{box-sizing:border-box;}
@@ -25,78 +22,107 @@ body{
   background:var(--paper);
   color:var(--ink);
   font-family:'Vazirmatn','Tahoma',sans-serif;
-  line-height:1.7;
-  padding:32px 16px 64px;
+  line-height:1.8;
+  padding:36px 14px 60px;
 }
-.wrap{max-width:640px;margin:0 auto;}
-.masthead{
-  border-bottom:3px solid var(--forest);
-  padding-bottom:18px;
-  margin-bottom:28px;
-}
-.masthead .eyebrow{
-  font-size:13px;
-  color:var(--gold);
-  margin:0 0 6px;
-  font-weight:600;
-}
-.masthead h1{
-  font-size:26px;
-  margin:0 0 4px;
-  color:var(--forest-dark);
-  font-weight:700;
-}
-.masthead p{margin:0;color:#5a5346;font-size:14.5px;}
+.page{max-width:720px;margin:0 auto;}
 
-.card{
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:4px;
-  padding:26px 22px;
+.frame{
+  position:relative;
+  background:var(--sheet);
+  border:2px solid var(--ink);
+  padding:56px 36px 40px;
 }
-fieldset{border:none;padding:0;margin:0 0 26px;}
-legend{
-  font-size:15px;
+.frame::before{
+  content:'';
+  position:absolute;
+  inset:8px;
+  border:1px solid var(--ink);
+  pointer-events:none;
+}
+
+.corner{position:absolute;width:30px;height:30px;z-index:2;
+  background-image:
+    linear-gradient(45deg, var(--ink) 25%, transparent 25.5%, transparent 74.5%, var(--ink) 75%),
+    linear-gradient(45deg, var(--ink) 25%, transparent 25.5%, transparent 74.5%, var(--ink) 75%);
+  background-size:15px 15px;
+  background-position:0 0, 7.5px 7.5px;
+  opacity:.92;
+}
+.corner::after{content:'';position:absolute;width:13px;height:13px;border-radius:50%;border:2px solid var(--ink);background:var(--sheet);}
+.corner.tl{top:-15px;left:-15px;} .corner.tl::after{top:9px;left:9px;}
+.corner.tr{top:-15px;right:-15px;} .corner.tr::after{top:9px;right:9px;}
+.corner.bl{bottom:-15px;left:-15px;} .corner.bl::after{bottom:9px;left:9px;}
+.corner.br{bottom:-15px;right:-15px;} .corner.br::after{bottom:9px;right:9px;}
+
+.rule{height:1px;background:var(--ink);position:relative;margin:12px 0;}
+.rule::after{content:'';position:absolute;left:0;right:0;top:4px;height:1px;background:var(--ink);}
+
+.title-block{margin-bottom:34px;}
+.title-block h1{
+  margin:10px 0 0;
+  font-size:27px;
+  font-weight:800;
+  text-align:center;
+  letter-spacing:.3px;
+  color:var(--ink);
+}
+.title-block .sub{
+  text-align:center;
+  font-size:13.5px;
+  color:#5e5744;
+  margin:14px 0 0;
+}
+
+.field{
+  display:flex;
+  align-items:baseline;
+  gap:14px;
+  padding:13px 0;
+}
+.field label{
+  flex:0 0 172px;
+  text-align:right;
   font-weight:700;
-  color:var(--forest-dark);
-  padding:0 0 10px;
-  border-bottom:1px solid var(--line);
-  width:100%;
-  margin-bottom:16px;
+  font-size:14.5px;
+  padding-top:9px;
 }
-.row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
-.field{flex:1 1 220px;display:flex;flex-direction:column;gap:6px;}
-label{font-size:13.5px;color:#4a4438;}
-label .req{color:var(--err);margin-inline-start:2px;}
+.field label .req{color:var(--err);margin-inline-start:3px;}
+.field .val{flex:1;min-width:0;}
+
 input[type=text],input[type=tel],textarea,select{
   font-family:inherit;
   font-size:15px;
-  padding:9px 11px;
-  border:1px solid var(--line);
-  border-radius:3px;
-  background:#fffefb;
+  padding:8px 4px;
+  border:none;
+  border-bottom:1.5px solid var(--ink);
+  border-radius:0;
+  background:transparent;
   color:var(--ink);
   width:100%;
 }
 input:focus,select:focus,textarea:focus{
-  outline:2px solid var(--gold);
-  outline-offset:1px;
-  border-color:var(--gold);
+  outline:none;
+  border-bottom-color:var(--gold);
+  border-bottom-width:2px;
 }
-textarea{resize:vertical;min-height:64px;}
-.dategrp{display:flex;gap:8px;}
-.dategrp select{flex:1;}
-.hint{font-size:12px;color:#8a8272;}
-.errmsg{font-size:12.5px;color:var(--err);min-height:15px;}
+textarea{resize:vertical;min-height:50px;}
+select{background:transparent;}
+
+.dategrp{display:flex;gap:10px;}
+.dategrp select{flex:1;text-align:center;}
+
+.hint{font-size:11.5px;color:#8a8166;margin-top:4px;}
+.errmsg{font-size:12.5px;color:var(--err);min-height:16px;margin-top:3px;}
+
 .auto{
-  background:#efece2;
-  border:1px dashed var(--line);
-  padding:9px 11px;
-  border-radius:3px;
-  font-size:14px;
-  color:#5a5346;
+  padding:8px 4px;
+  border-bottom:1.5px dashed var(--line);
+  font-size:14.5px;
+  color:#5e5744;
 }
-.actions{display:flex;justify-content:flex-start;margin-top:6px;}
+
+.actions{display:flex;justify-content:center;margin-top:26px;}
 button{
   font-family:inherit;
   font-size:15.5px;
@@ -104,86 +130,83 @@ button{
   background:var(--forest);
   color:#fdfaf2;
   border:none;
-  padding:12px 34px;
-  border-radius:3px;
+  padding:12px 44px;
+  border-radius:2px;
   cursor:pointer;
+  letter-spacing:.3px;
 }
 button:hover{background:var(--forest-dark);}
 button:disabled{background:#9aa79c;cursor:wait;}
-.status{
-  margin-top:16px;
-  padding:12px 14px;
-  border-radius:3px;
-  font-size:14px;
-  display:none;
-}
+
+.status{margin-top:18px;padding:12px 14px;border-radius:2px;font-size:14px;display:none;text-align:center;}
 .status.ok{display:block;background:#e6efe2;border:1px solid var(--forest);color:var(--forest-dark);}
 .status.bad{display:block;background:#f5e4e1;border:1px solid var(--err);color:var(--err);}
 
-.receipt-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);}
+#receipt{margin-top:24px;padding-top:28px;}
+#receipt .rtitle{text-align:center;font-weight:800;font-size:18px;margin-bottom:16px;}
+.receipt-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14.5px;}
 .receipt-row:last-child{border-bottom:none;}
-.receipt-row .k{color:#5a5346;}
+.receipt-row .k{color:#5e5744;}
 .receipt-row .v{font-weight:600;text-align:left;}
 
 @media print{
-  body *{visibility:hidden;}
+  body{background:#fff;padding:0;}
+  .frame > *{visibility:hidden;}
   #receipt, #receipt *{visibility:visible;}
-  #receipt{position:absolute;inset:0;margin:0;border:none;}
+  #receipt{position:absolute;inset:0;margin:0;}
   #printBtn{display:none;}
+}
+@media (max-width:480px){
+  .field{flex-direction:column;align-items:stretch;gap:4px;}
+  .field label{flex:none;padding-top:0;}
 }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="page">
+  <div class="frame">
+    <span class="corner tl"></span>
+    <span class="corner tr"></span>
+    <span class="corner bl"></span>
+    <span class="corner br"></span>
 
-  <div class="masthead">
-    <p class="eyebrow">ثبت‌نام دانش‌پذیر</p>
-    <h1 id="instituteName">نام مؤسسه آموزشی</h1>
-    <p>لطفاً اطلاعات زیر را با دقت تکمیل کنید. موارد ستاره‌دار الزامی هستند.</p>
-  </div>
+    <div class="title-block">
+      <div class="rule"></div>
+      <h1>فرم پیش‌ثبت‌نام مرکز آموزش</h1>
+      <div class="rule"></div>
+      <p class="sub">لطفاً اطلاعات زیر را با دقت تکمیل کنید. موارد ستاره‌دار الزامی هستند.</p>
+    </div>
 
-  <form class="card" id="regForm" novalidate>
+    <form id="regForm" novalidate>
 
-    <fieldset>
-      <legend>مشخصات فردی</legend>
-      <div class="row">
-        <div class="field">
-          <label>نام<span class="req">*</span></label>
-          <input type="text" id="firstName" required>
-          <div class="errmsg"></div>
-        </div>
-        <div class="field">
-          <label>نام خانوادگی<span class="req">*</span></label>
-          <input type="text" id="lastName" required>
-          <div class="errmsg"></div>
-        </div>
+      <div class="field">
+        <label for="firstName">نام<span class="req">*</span></label>
+        <div class="val"><input type="text" id="firstName" required><div class="errmsg"></div></div>
       </div>
-      <div class="row">
-        <div class="field">
-          <label>نام پدر<span class="req">*</span></label>
-          <input type="text" id="fatherName" required>
-          <div class="errmsg"></div>
-        </div>
-        <div class="field">
-          <label>کد ملی<span class="req">*</span></label>
-          <input type="text" id="nationalId" inputmode="numeric" maxlength="10" required>
-          <div class="errmsg"></div>
-        </div>
+
+      <div class="field">
+        <label for="lastName">نام خانوادگی<span class="req">*</span></label>
+        <div class="val"><input type="text" id="lastName" required><div class="errmsg"></div></div>
       </div>
-      <div class="row">
-        <div class="field">
-          <label>شماره شناسنامه<span class="req">*</span></label>
-          <input type="text" id="idNumber" inputmode="numeric" required>
-          <div class="errmsg"></div>
-        </div>
-        <div class="field">
-          <label>محل صدور</label>
-          <input type="text" id="issuePlace">
-        </div>
+
+      <div class="field">
+        <label for="fatherName">نام پدر<span class="req">*</span></label>
+        <div class="val"><input type="text" id="fatherName" required><div class="errmsg"></div></div>
       </div>
-      <div class="row">
-        <div class="field" style="flex:1 1 100%;">
-          <label>تاریخ تولد (شمسی)<span class="req">*</span></label>
+
+      <div class="field">
+        <label for="nationalId">کد ملی<span class="req">*</span></label>
+        <div class="val"><input type="text" id="nationalId" inputmode="numeric" maxlength="10" required><div class="errmsg"></div></div>
+      </div>
+
+      <div class="field">
+        <label for="idNumber">شماره شناسنامه<span class="req">*</span></label>
+        <div class="val"><input type="text" id="idNumber" inputmode="numeric" required><div class="errmsg"></div></div>
+      </div>
+
+      <div class="field">
+        <label>تاریخ تولد (شمسی)<span class="req">*</span></label>
+        <div class="val">
           <div class="dategrp">
             <select id="bYear"></select>
             <select id="bMonth"></select>
@@ -192,13 +215,15 @@ button:disabled{background:#9aa79c;cursor:wait;}
           <div class="errmsg"></div>
         </div>
       </div>
-    </fieldset>
 
-    <fieldset>
-      <legend>تحصیلات و تماس</legend>
-      <div class="row">
-        <div class="field">
-          <label>میزان مدرک تحصیلی<span class="req">*</span></label>
+      <div class="field">
+        <label for="issuePlace">محل صدور</label>
+        <div class="val"><input type="text" id="issuePlace"></div>
+      </div>
+
+      <div class="field">
+        <label for="degree">میزان مدرک تحصیلی<span class="req">*</span></label>
+        <div class="val">
           <select id="degree" required>
             <option value="">— انتخاب کنید —</option>
             <option>زیر دیپلم</option>
@@ -210,69 +235,61 @@ button:disabled{background:#9aa79c;cursor:wait;}
           </select>
           <div class="errmsg"></div>
         </div>
-        <div class="field">
-          <label>رشته ثبت‌نامی</label>
-          <input type="text" id="major">
-        </div>
       </div>
-      <div class="row">
-        <div class="field">
-          <label>موبایل ۱<span class="req">*</span></label>
-          <input type="tel" id="mobile1" inputmode="numeric" placeholder="09xxxxxxxxx" required>
-          <div class="errmsg"></div>
-        </div>
-        <div class="field">
-          <label>موبایل ۲<span class="req">*</span></label>
-          <input type="tel" id="mobile2" inputmode="numeric" placeholder="09xxxxxxxxx" required>
-          <div class="errmsg"></div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="field">
-          <label>تلفن منزل / موبایل ۳</label>
-          <input type="tel" id="phone3" inputmode="numeric">
-        </div>
-      </div>
-      <div class="row">
-        <div class="field" style="flex:1 1 100%;">
-          <label>آدرس محل سکونت<span class="req">*</span></label>
-          <textarea id="address" required></textarea>
-          <div class="errmsg"></div>
-        </div>
-      </div>
-    </fieldset>
 
-    <fieldset>
-      <legend>سایر</legend>
-      <div class="row">
-        <div class="field">
-          <label>تاریخ ثبت‌نام</label>
+      <div class="field">
+        <label for="mobile1">موبایل ۱<span class="req">*</span></label>
+        <div class="val"><input type="tel" id="mobile1" inputmode="numeric" placeholder="09xxxxxxxxx" required><div class="errmsg"></div></div>
+      </div>
+
+      <div class="field">
+        <label for="mobile2">موبایل ۲<span class="req">*</span></label>
+        <div class="val"><input type="tel" id="mobile2" inputmode="numeric" placeholder="09xxxxxxxxx" required><div class="errmsg"></div></div>
+      </div>
+
+      <div class="field">
+        <label for="phone3">تلفن منزل / موبایل ۳</label>
+        <div class="val"><input type="tel" id="phone3" inputmode="numeric"></div>
+      </div>
+
+      <div class="field">
+        <label for="address">آدرس محل سکونت<span class="req">*</span></label>
+        <div class="val"><textarea id="address" required></textarea><div class="errmsg"></div></div>
+      </div>
+
+      <div class="field">
+        <label>تاریخ ثبت‌نام</label>
+        <div class="val">
           <div class="auto" id="autoDate">—</div>
           <div class="hint">به‌صورت خودکار ثبت می‌شود</div>
         </div>
       </div>
-      <div class="row">
-        <div class="field" style="flex:1 1 100%;">
-          <label>توضیحات</label>
-          <textarea id="notes"></textarea>
-        </div>
+
+      <div class="field">
+        <label for="major">رشته ثبت‌نامی</label>
+        <div class="val"><input type="text" id="major"></div>
       </div>
-    </fieldset>
 
-    <div class="actions">
-      <button type="submit" id="submitBtn">ثبت‌نام</button>
-    </div>
-    <div class="status" id="statusBox"></div>
-  </form>
+      <div class="field">
+        <label for="notes">توضیحات</label>
+        <div class="val"><textarea id="notes"></textarea></div>
+      </div>
 
-  <div class="card" id="receipt" style="display:none; margin-top:20px;">
-    <fieldset style="margin-bottom:0;">
-      <legend>رسید ثبت‌نام</legend>
-      <div id="receiptBody" style="font-size:14.5px;"></div>
-      <div class="actions" style="margin-top:16px;">
+      <div class="actions">
+        <button type="submit" id="submitBtn">ثبت‌نام</button>
+      </div>
+      <div class="status" id="statusBox"></div>
+    </form>
+
+    <div id="receipt" style="display:none;">
+      <div class="rule"></div>
+      <div class="rtitle">رسید ثبت‌نام</div>
+      <div id="receiptBody"></div>
+      <div class="actions" style="margin-top:18px;">
         <button type="button" id="printBtn">چاپ رسید</button>
       </div>
-    </fieldset>
+    </div>
+
   </div>
 </div>
 
