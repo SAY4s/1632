@@ -289,11 +289,22 @@ const CONFIG_CELL = 'B5';
 let CONFIG = null;
 async function loadConfig(){
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}&range=${CONFIG_CELL}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('خواندن تنظیمات از گوگل‌شیت ناموفق بود');
-  const raw = (await res.text()).trim().replace(/^"|"$/g,'').replace(/""/g,'"');
+  let res;
+  try{
+    res = await fetch(url);
+  } catch(e){
+    throw new Error('اتصال به گوگل‌شیت برقرار نشد (Failed to fetch) — اینترنت/VPN یا دسترسی شبکه را بررسی کن');
+  }
+  if (res.redirected || !res.ok){
+    throw new Error('گوگل‌شیت در دسترس نیست — از Share باید روی «Anyone with the link: Viewer» تنظیم شده باشد');
+  }
+  const bodyText = (await res.text()).trim();
+  if (bodyText.startsWith('<')){
+    throw new Error('گوگل‌شیت پابلیک نیست — اشتراک‌گذاری را روی «هرکسی که لینک را دارد: بیننده» بگذار');
+  }
+  const raw = bodyText.replace(/^"|"$/g,'').replace(/""/g,'"');
   const [repoFull, fileName, branch, token] = raw.split(',').map(s=>s.trim());
-  if (!repoFull || !fileName || !branch || !token) throw new Error('محتوای خونه B5 ناقص است');
+  if (!repoFull || !fileName || !branch || !token) throw new Error('محتوای خونه B5 ناقص یا با فرمت اشتباه است');
   const [owner, repo] = repoFull.split('/');
   return { owner, repo, fileName, branch, token };
 }
@@ -398,7 +409,12 @@ async function submitToGithub(data){
   // خواندن فایل فعلی برای افزودن رکورد جدید به آرایه
   let list = [];
   let sha = undefined;
-  const getRes = await fetch(`${apiUrl}?ref=${CONFIG.branch}`, { headers });
+  let getRes;
+  try{
+    getRes = await fetch(`${apiUrl}?ref=${CONFIG.branch}`, { headers });
+  } catch(e){
+    throw new Error('اتصال به GitHub API برقرار نشد (Failed to fetch) — اینترنت/VPN را بررسی کن');
+  }
   if (getRes.status === 200){
     const file = await getRes.json();
     sha = file.sha;
@@ -417,8 +433,16 @@ async function submitToGithub(data){
   };
   if (sha) body.sha = sha;
 
-  const putRes = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
-  if (!putRes.ok) throw new Error('خطا در ذخیره‌سازی در گیت‌هاب');
+  let putRes;
+  try{
+    putRes = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
+  } catch(e){
+    throw new Error('اتصال به GitHub API برقرار نشد (Failed to fetch) — اینترنت/VPN را بررسی کن');
+  }
+  if (!putRes.ok){
+    const errBody = await putRes.json().catch(()=>({}));
+    throw new Error(`خطا در ذخیره‌سازی در گیت‌هاب: ${errBody.message || putRes.status}`);
+  }
   return putRes.json();
 }
 
