@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>فرم ثبت‌نام</title>
+<style>
+@font-face {
+  font-family: 'Vazirmatn';
+  src: local('Vazirmatn');
+}
+:root{
+  --ink:#1c2a20;
+  --paper:#f6f2e9;
+  --panel:#ffffff;
+  --forest:#2c4a34;
+  --forest-dark:#1c3323;
+  --gold:#b98b2a;
+  --line:#d8d0bd;
+  --err:#a4342a;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Vazirmatn','Tahoma',sans-serif;
+  line-height:1.7;
+  padding:32px 16px 64px;
+}
+.wrap{max-width:640px;margin:0 auto;}
+.masthead{
+  border-bottom:3px solid var(--forest);
+  padding-bottom:18px;
+  margin-bottom:28px;
+}
+.masthead .eyebrow{
+  font-size:13px;
+  color:var(--gold);
+  margin:0 0 6px;
+  font-weight:600;
+}
+.masthead h1{
+  font-size:26px;
+  margin:0 0 4px;
+  color:var(--forest-dark);
+  font-weight:700;
+}
+.masthead p{margin:0;color:#5a5346;font-size:14.5px;}
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:4px;
+  padding:26px 22px;
+}
+fieldset{border:none;padding:0;margin:0 0 26px;}
+legend{
+  font-size:15px;
+  font-weight:700;
+  color:var(--forest-dark);
+  padding:0 0 10px;
+  border-bottom:1px solid var(--line);
+  width:100%;
+  margin-bottom:16px;
+}
+.row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+.field{flex:1 1 220px;display:flex;flex-direction:column;gap:6px;}
+label{font-size:13.5px;color:#4a4438;}
+label .req{color:var(--err);margin-inline-start:2px;}
+input[type=text],input[type=tel],textarea,select{
+  font-family:inherit;
+  font-size:15px;
+  padding:9px 11px;
+  border:1px solid var(--line);
+  border-radius:3px;
+  background:#fffefb;
+  color:var(--ink);
+  width:100%;
+}
+input:focus,select:focus,textarea:focus{
+  outline:2px solid var(--gold);
+  outline-offset:1px;
+  border-color:var(--gold);
+}
+textarea{resize:vertical;min-height:64px;}
+.dategrp{display:flex;gap:8px;}
+.dategrp select{flex:1;}
+.hint{font-size:12px;color:#8a8272;}
+.errmsg{font-size:12.5px;color:var(--err);min-height:15px;}
+.auto{
+  background:#efece2;
+  border:1px dashed var(--line);
+  padding:9px 11px;
+  border-radius:3px;
+  font-size:14px;
+  color:#5a5346;
+}
+.actions{display:flex;justify-content:flex-start;margin-top:6px;}
+button{
+  font-family:inherit;
+  font-size:15.5px;
+  font-weight:700;
+  background:var(--forest);
+  color:#fdfaf2;
+  border:none;
+  padding:12px 34px;
+  border-radius:3px;
+  cursor:pointer;
+}
+button:hover{background:var(--forest-dark);}
+button:disabled{background:#9aa79c;cursor:wait;}
+.status{
+  margin-top:16px;
+  padding:12px 14px;
+  border-radius:3px;
+  font-size:14px;
+  display:none;
+}
+.status.ok{display:block;background:#e6efe2;border:1px solid var(--forest);color:var(--forest-dark);}
+.status.bad{display:block;background:#f5e4e1;border:1px solid var(--err);color:var(--err);}
+
+.receipt-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);}
+.receipt-row:last-child{border-bottom:none;}
+.receipt-row .k{color:#5a5346;}
+.receipt-row .v{font-weight:600;text-align:left;}
+
+@media print{
+  body *{visibility:hidden;}
+  #receipt, #receipt *{visibility:visible;}
+  #receipt{position:absolute;inset:0;margin:0;border:none;}
+  #printBtn{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <p class="eyebrow">ثبت‌نام دانش‌پذیر</p>
+    <h1 id="instituteName">نام مؤسسه آموزشی</h1>
+    <p>لطفاً اطلاعات زیر را با دقت تکمیل کنید. موارد ستاره‌دار الزامی هستند.</p>
+  </div>
+
+  <form class="card" id="regForm" novalidate>
+
+    <fieldset>
+      <legend>مشخصات فردی</legend>
+      <div class="row">
+        <div class="field">
+          <label>نام<span class="req">*</span></label>
+          <input type="text" id="firstName" required>
+          <div class="errmsg"></div>
+        </div>
+        <div class="field">
+          <label>نام خانوادگی<span class="req">*</span></label>
+          <input type="text" id="lastName" required>
+          <div class="errmsg"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>نام پدر<span class="req">*</span></label>
+          <input type="text" id="fatherName" required>
+          <div class="errmsg"></div>
+        </div>
+        <div class="field">
+          <label>کد ملی<span class="req">*</span></label>
+          <input type="text" id="nationalId" inputmode="numeric" maxlength="10" required>
+          <div class="errmsg"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>شماره شناسنامه<span class="req">*</span></label>
+          <input type="text" id="idNumber" inputmode="numeric" required>
+          <div class="errmsg"></div>
+        </div>
+        <div class="field">
+          <label>محل صدور</label>
+          <input type="text" id="issuePlace">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:1 1 100%;">
+          <label>تاریخ تولد (شمسی)<span class="req">*</span></label>
+          <div class="dategrp">
+            <select id="bYear"></select>
+            <select id="bMonth"></select>
+            <select id="bDay"></select>
+          </div>
+          <div class="errmsg"></div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>تحصیلات و تماس</legend>
+      <div class="row">
+        <div class="field">
+          <label>میزان مدرک تحصیلی<span class="req">*</span></label>
+          <select id="degree" required>
+            <option value="">— انتخاب کنید —</option>
+            <option>زیر دیپلم</option>
+            <option>دیپلم</option>
+            <option>فوق دیپلم</option>
+            <option>کارشناسی</option>
+            <option>کارشناسی ارشد</option>
+            <option>دکتری</option>
+          </select>
+          <div class="errmsg"></div>
+        </div>
+        <div class="field">
+          <label>رشته ثبت‌نامی</label>
+          <input type="text" id="major">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>موبایل ۱<span class="req">*</span></label>
+          <input type="tel" id="mobile1" inputmode="numeric" placeholder="09xxxxxxxxx" required>
+          <div class="errmsg"></div>
+        </div>
+        <div class="field">
+          <label>موبایل ۲<span class="req">*</span></label>
+          <input type="tel" id="mobile2" inputmode="numeric" placeholder="09xxxxxxxxx" required>
+          <div class="errmsg"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>تلفن منزل / موبایل ۳</label>
+          <input type="tel" id="phone3" inputmode="numeric">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:1 1 100%;">
+          <label>آدرس محل سکونت<span class="req">*</span></label>
+          <textarea id="address" required></textarea>
+          <div class="errmsg"></div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>سایر</legend>
+      <div class="row">
+        <div class="field">
+          <label>تاریخ ثبت‌نام</label>
+          <div class="auto" id="autoDate">—</div>
+          <div class="hint">به‌صورت خودکار ثبت می‌شود</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:1 1 100%;">
+          <label>توضیحات</label>
+          <textarea id="notes"></textarea>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" id="submitBtn">ثبت‌نام</button>
+    </div>
+    <div class="status" id="statusBox"></div>
+  </form>
+
+  <div class="card" id="receipt" style="display:none; margin-top:20px;">
+    <fieldset style="margin-bottom:0;">
+      <legend>رسید ثبت‌نام</legend>
+      <div id="receiptBody" style="font-size:14.5px;"></div>
+      <div class="actions" style="margin-top:16px;">
+        <button type="button" id="printBtn">چاپ رسید</button>
+      </div>
+    </fieldset>
+  </div>
+</div>
+
+<script>
+/* ===== پیکربندی ذخیره‌سازی در گیت‌هاب — این بخش را قبل از استفاده تکمیل کنید ===== */
+const CONFIG = {
+  GITHUB_TOKEN: 'YOUR_GITHUB_TOKEN', // توکن با دسترسی repo
+  REPO_OWNER:   'your-username',
+  REPO_NAME:    'your-repo',
+  FOLDER:       'submissions'
+};
+/* =================================================================== */
+
+const faMonths = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+
+function fillSelect(el, from, to, step=1){
+  el.innerHTML = '';
+  if (step === -1){
+    for(let i=from;i>=to;i--){const o=document.createElement('option');o.value=i;o.textContent=i;el.appendChild(o);}
+  } else {
+    for(let i=from;i<=to;i+=step){const o=document.createElement('option');o.value=i;o.textContent=i;el.appendChild(o);}
+  }
+}
+const bYear = document.getElementById('bYear');
+const bMonth = document.getElementById('bMonth');
+const bDay = document.getElementById('bDay');
+fillSelect(bYear, 1410, 1300, -1);
+bYear.insertAdjacentHTML('afterbegin','<option value="">سال</option>');
+bMonth.innerHTML = '<option value="">ماه</option>' + faMonths.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+fillSelect(bDay, 1, 31);
+bDay.insertAdjacentHTML('afterbegin','<option value="">روز</option>');
+
+// تبدیل میلادی به شمسی برای ثبت خودکار تاریخ ثبت‌نام
+function gregorianToJalali(gy, gm, gd){
+  const g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
+  let jy = (gy <= 1600) ? 0 : 979;
+  gy -= (gy <= 1600) ? 621 : 1600;
+  const gy2 = (gm > 2) ? (gy + 1) : gy;
+  let days = (365*gy) + Math.floor((gy2+3)/4) - Math.floor((gy2+99)/100) + Math.floor((gy2+399)/400) - 80 + gd + g_d_m[gm-1];
+  jy += 33*Math.floor(days/12053); days %= 12053;
+  jy += 4*Math.floor(days/1461); days %= 1461;
+  jy += Math.floor((days-1)/365); if (days > 365) days = (days-1)%365;
+  const jm = (days < 186) ? 1+Math.floor(days/31) : 7+Math.floor((days-186)/30);
+  const jd = 1 + ((days < 186) ? (days%31) : ((days-186)%30));
+  return [jy, jm, jd];
+}
+const today = new Date();
+const [jy,jm,jd] = gregorianToJalali(today.getFullYear(), today.getMonth()+1, today.getDate());
+const jalaliToday = `${jd} ${faMonths[jm-1]} ${jy}`;
+document.getElementById('autoDate').textContent = jalaliToday;
+
+function validateNationalId(code){
+  if (!/^\d{10}$/.test(code)) return false;
+  if (/^(\d)\1{9}$/.test(code)) return false;
+  const check = parseInt(code[9],10);
+  let sum = 0;
+  for (let i=0;i<9;i++) sum += parseInt(code[i],10) * (10-i);
+  const r = sum % 11;
+  return (r < 2 && check === r) || (r >= 2 && check === 11-r);
+}
+const mobileRe = /^09\d{9}$/;
+
+function setErr(input, msg){
+  const box = input.closest('.field').querySelector('.errmsg');
+  if (box) box.textContent = msg || '';
+  input.style.borderColor = msg ? 'var(--err)' : 'var(--line)';
+}
+
+function validate(){
+  let ok = true;
+  const req = [['firstName','نام را وارد کنید'],['lastName','نام خانوادگی را وارد کنید'],
+    ['fatherName','نام پدر را وارد کنید'],['idNumber','شماره شناسنامه را وارد کنید'],
+    ['degree','مدرک تحصیلی را انتخاب کنید'],['address','آدرس را وارد کنید']];
+  req.forEach(([id,msg])=>{
+    const el = document.getElementById(id);
+    if (!el.value.trim()){ setErr(el,msg); ok=false; } else setErr(el,'');
+  });
+
+  const nid = document.getElementById('nationalId');
+  if (!validateNationalId(nid.value.trim())){ setErr(nid,'کد ملی معتبر نیست'); ok=false; } else setErr(nid,'');
+
+  const m1 = document.getElementById('mobile1');
+  if (!mobileRe.test(m1.value.trim())){ setErr(m1,'شماره موبایل معتبر نیست'); ok=false; } else setErr(m1,'');
+
+  const m2 = document.getElementById('mobile2');
+  if (!mobileRe.test(m2.value.trim())){ setErr(m2,'شماره موبایل معتبر نیست'); ok=false; } else setErr(m2,'');
+
+  const dateErrBox = bDay.closest('.field').querySelector('.errmsg');
+  if (!bYear.value || !bMonth.value || !bDay.value){ dateErrBox.textContent='تاریخ تولد را کامل انتخاب کنید'; ok=false; }
+  else dateErrBox.textContent='';
+
+  return ok;
+}
+
+async function submitToGithub(data){
+  const safeId = data.nationalId || 'ثبت‌نام';
+  const fileName = `${CONFIG.FOLDER}/${safeId}_${Date.now()}.json`;
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  const url = `https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/contents/${fileName}`;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `token ${CONFIG.GITHUB_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      message: `ثبت‌نام جدید: ${data.firstName} ${data.lastName}`,
+      content: content
+    })
+  });
+  if (!res.ok) throw new Error('خطا در ارتباط با سرور ذخیره‌سازی');
+  return res.json();
+}
+
+function showReceipt(data){
+  const rows = [
+    ['نام و نام خانوادگی', `${data.firstName} ${data.lastName}`],
+    ['نام پدر', data.fatherName],
+    ['کد ملی', data.nationalId],
+    ['شماره شناسنامه', data.idNumber],
+    ['محل صدور', data.issuePlace || '—'],
+    ['تاریخ تولد', data.birthDate],
+    ['میزان مدرک تحصیلی', data.degree],
+    ['رشته ثبت‌نامی', data.major || '—'],
+    ['موبایل ۱', data.mobile1],
+    ['موبایل ۲', data.mobile2],
+    ['تلفن منزل / موبایل ۳', data.phone3 || '—'],
+    ['آدرس محل سکونت', data.address],
+    ['تاریخ ثبت‌نام', data.registrationDate],
+    ['توضیحات', data.notes || '—']
+  ];
+  const body = document.getElementById('receiptBody');
+  body.innerHTML = rows.map(([k,v])=>
+    `<div class="receipt-row"><span class="k">${k}</span><span class="v">${v}</span></div>`
+  ).join('');
+  const receipt = document.getElementById('receipt');
+  receipt.style.display = 'block';
+  receipt.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+document.getElementById('regForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const statusBox = document.getElementById('statusBox');
+  statusBox.className = 'status';
+  statusBox.textContent = '';
+  if (!validate()){
+    statusBox.className = 'status bad';
+    statusBox.textContent = 'فرم ناقص یا نادرست است — موارد قرمزرنگ را اصلاح کنید.';
+    const firstBad = document.querySelector('.errmsg:not(:empty)');
+    const target = firstBad ? (firstBad.closest('.field') || firstBad) : statusBox;
+    target.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+
+  const data = {
+    firstName: document.getElementById('firstName').value.trim(),
+    lastName: document.getElementById('lastName').value.trim(),
+    fatherName: document.getElementById('fatherName').value.trim(),
+    nationalId: document.getElementById('nationalId').value.trim(),
+    idNumber: document.getElementById('idNumber').value.trim(),
+    birthDate: `${bYear.value}/${bMonth.value}/${bDay.value}`,
+    issuePlace: document.getElementById('issuePlace').value.trim(),
+    degree: document.getElementById('degree').value,
+    major: document.getElementById('major').value.trim(),
+    mobile1: document.getElementById('mobile1').value.trim(),
+    mobile2: document.getElementById('mobile2').value.trim(),
+    phone3: document.getElementById('phone3').value.trim(),
+    address: document.getElementById('address').value.trim(),
+    registrationDate: jalaliToday,
+    notes: document.getElementById('notes').value.trim()
+  };
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'در حال ثبت...';
+  try{
+    if (CONFIG.GITHUB_TOKEN === 'YOUR_GITHUB_TOKEN'){
+      throw new Error('تنظیمات گیت‌هاب کامل نشده است (بالای فایل را ویرایش کنید)');
+    }
+    await submitToGithub(data);
+    statusBox.className = 'status ok';
+    statusBox.textContent = 'ثبت‌نام با موفقیت انجام شد.';
+    showReceipt(data);
+    e.target.reset();
+    fillSelect(bYear, 1410, 1300, -1);
+    bYear.insertAdjacentHTML('afterbegin','<option value="">سال</option>');
+  } catch(err){
+    statusBox.className = 'status bad';
+    statusBox.textContent = err.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'ثبت‌نام';
+  }
+});
+</script>
+</body>
+</html>
