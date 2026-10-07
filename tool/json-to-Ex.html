@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تبدیل JSON به اکسل</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--tx:#1b2333;--mut:#6b7488;--pri:#1f6f4a;--pri2:#2a9d68;--bd:#e1e6f0}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1420;--card:#171e2e;--tx:#e8ecf5;--mut:#8f9ab2;--bd:#27314a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'Vazirmatn',Tahoma,sans-serif;padding:24px 16px}
+.wrap{max-width:1000px;margin:0 auto}
+h1{font-size:24px;margin:0 0 4px;font-weight:800}
+p.sub{color:var(--mut);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:20px;margin-bottom:16px}
+.drop{border:2px dashed var(--bd);border-radius:14px;padding:36px 16px;text-align:center;cursor:pointer;transition:.2s}
+.drop.over,.drop:hover{border-color:var(--pri2);background:rgba(42,157,104,.07)}
+.drop b{display:block;font-size:17px;margin-bottom:6px}
+.drop span{color:var(--mut);font-size:14px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+label.chk{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:14px}
+input[type=text]{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--bd);background:transparent;color:var(--tx);min-width:200px}
+button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:11px 22px;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+.stat{color:var(--mut);font-size:14px}
+.tbl{overflow-x:auto;border:1px solid var(--bd);border-radius:12px;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{background:var(--pri);color:#fff;padding:9px 12px;white-space:nowrap;font-weight:600}
+td{padding:8px 12px;border-top:1px solid var(--bd);white-space:nowrap}
+tr:nth-child(even) td{background:rgba(127,140,170,.07)}
+.err{color:#d6455d;margin-top:10px;font-size:14px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>تبدیل JSON به اکسل</h1>
+  <p class="sub">فایل JSON را بده، یک فایل اکسل مرتب و راست‌چین تحویل بگیر.</p>
+
+  <div class="card">
+    <div class="drop" id="drop">
+      <b>فایل JSON را اینجا رها کنید یا کلیک کنید</b>
+      <span>همه‌چیز داخل مرورگر انجام می‌شود و چیزی آپلود نمی‌شود</span>
+      <input type="file" id="file" accept=".json,application/json" class="hidden">
+    </div>
+    <div class="err hidden" id="err"></div>
+  </div>
+
+  <div class="card hidden" id="panel">
+    <div class="row" style="margin-bottom:14px">
+      <span class="stat" id="stat"></span>
+    </div>
+    <div class="row">
+      <input type="text" id="fname" value="خروجی" placeholder="نام فایل">
+      <label class="chk"><input type="checkbox" id="dropEmpty" checked> حذف ستون‌های کاملاً خالی</label>
+      <label class="chk"><input type="checkbox" id="dedupe"> حذف ردیف‌های تکراری</label>
+      <label class="chk"><input type="checkbox" id="rownum" checked> ستون ردیف</label>
+      <button id="go">دانلود اکسل</button>
+    </div>
+    <div class="tbl"><table id="tbl"></table></div>
+  </div>
+</div>
+
+<script>
+const HEAD = {
+  firstName:'نام', lastName:'نام خانوادگی', fatherName:'نام پدر',
+  nationalId:'کد ملی', idNumber:'شماره شناسنامه', birthDate:'تاریخ تولد',
+  issuePlace:'محل صدور', degree:'مدرک تحصیلی', major:'رشته تحصیلی',
+  mobile1:'موبایل ۱', mobile2:'موبایل ۲', phone3:'تلفن ۳',
+  address:'آدرس', registrationDate:'تاریخ ثبت‌نام', notes:'توضیحات'
+};
+const WIDTH = {nationalId:14, idNumber:16, mobile1:15, mobile2:15, phone3:15, birthDate:13, address:34, notes:26, registrationDate:16};
+
+let rows = [];
+const $ = id => document.getElementById(id);
+
+function showErr(m){ $('err').textContent = m; $('err').classList.toggle('hidden', !m); }
+
+function load(file){
+  showErr('');
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      let d = JSON.parse(r.result);
+      if(!Array.isArray(d)){
+        const arr = Object.values(d).find(Array.isArray);
+        d = arr || [d];
+      }
+      rows = d.filter(x => x && typeof x === 'object');
+      if(!rows.length) throw new Error('رکوردی پیدا نشد');
+      $('fname').value = file.name.replace(/\.json$/i,'') || 'خروجی';
+      $('panel').classList.remove('hidden');
+      render();
+    }catch(e){ showErr('فایل معتبر نیست: ' + e.message); $('panel').classList.add('hidden'); }
+  };
+  r.readAsText(file, 'utf-8');
+}
+
+function prepare(){
+  let data = rows.map(o => { const c={}; for(const k in o){ const v=o[k]; c[k] = v==null ? '' : (typeof v==='object' ? JSON.stringify(v) : String(v).trim()); } return c; });
+  if($('dedupe').checked){
+    const seen = new Set();
+    data = data.filter(o => { const s = JSON.stringify(o); if(seen.has(s)) return false; seen.add(s); return true; });
+  }
+  let keys = [];
+  data.forEach(o => Object.keys(o).forEach(k => { if(!keys.includes(k)) keys.push(k); }));
+  const order = Object.keys(HEAD);
+  keys.sort((a,b) => { const ia=order.indexOf(a), ib=order.indexOf(b); return (ia<0?999:ia)-(ib<0?999:ib); });
+  if($('dropEmpty').checked) keys = keys.filter(k => data.some(o => o[k] !== ''));
+  return {data, keys};
+}
+
+function render(){
+  const {data, keys} = prepare();
+  $('stat').textContent = `${data.length} ردیف • ${keys.length} ستون`;
+  const t = $('tbl');
+  t.innerHTML = '<thead><tr>' + (keys.map(k=>`<th>${HEAD[k]||k}</th>`).join('')) + '</tr></thead>';
+  const tb = document.createElement('tbody');
+  data.slice(0,50).forEach(o => {
+    const tr = document.createElement('tr');
+    keys.forEach(k => { const td=document.createElement('td'); td.textContent=o[k]; tr.appendChild(td); });
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+}
+
+async function exportXlsx(){
+  const {data, keys} = prepare();
+  const useNum = $('rownum').checked;
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'JSON to Excel';
+  const ws = wb.addWorksheet('اطلاعات', {views:[{rightToLeft:true, state:'frozen', ySplit:1}]});
+
+  const cols = [];
+  if(useNum) cols.push({header:'ردیف', key:'__n', width:7});
+  keys.forEach(k => {
+    const longest = Math.max((HEAD[k]||k).length, ...data.map(o => (o[k]||'').length));
+    cols.push({header: HEAD[k]||k, key:k, width: WIDTH[k] || Math.min(Math.max(longest+4, 12), 45)});
+  });
+  ws.columns = cols;
+
+  data.forEach((o,i) => {
+    const r = {...o}; if(useNum) r.__n = i+1;
+    ws.addRow(r);
+  });
+
+  const thin = {style:'thin', color:{argb:'FFD0D7E2'}};
+  const border = {top:thin,left:thin,bottom:thin,right:thin};
+  const font = {name:'Vazirmatn', size:11};
+
+  ws.eachRow((row, n) => {
+    row.height = n===1 ? 26 : 22;
+    row.eachCell({includeEmpty:true}, (c, ci) => {
+      c.border = border;
+      c.numFmt = '@';
+      if(n===1){
+        c.font = {...font, bold:true, color:{argb:'FFFFFFFF'}};
+        c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FF1F6F4A'}};
+        c.alignment = {horizontal:'center', vertical:'middle', wrapText:true, readingOrder:'rtl'};
+      }else{
+        c.font = font;
+        if(n%2===1) c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFF3F7F5'}};
+        const key = cols[ci-1] && cols[ci-1].key;
+        const isAddr = key==='address' || key==='notes';
+        c.alignment = {horizontal: isAddr ? 'right' : 'center', vertical:'middle', wrapText:isAddr, readingOrder:'rtl'};
+      }
+    });
+  });
+
+  ws.autoFilter = {from:{row:1,column:1}, to:{row:1,column:cols.length}};
+  ws.pageSetup = {orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0};
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = ($('fname').value.trim() || 'خروجی') + '.xlsx';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+const drop = $('drop'), fi = $('file');
+drop.onclick = () => fi.click();
+fi.onchange = e => e.target.files[0] && load(e.target.files[0]);
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => {e.preventDefault(); drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => {e.preventDefault(); drop.classList.remove('over');}));
+drop.addEventListener('drop', e => e.dataTransfer.files[0] && load(e.dataTransfer.files[0]));
+['dropEmpty','dedupe'].forEach(id => $(id).onchange = render);
+$('go').onclick = exportXlsx;
+</script>
+</body>
+</html>
