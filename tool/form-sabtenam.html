@@ -440,9 +440,17 @@ function b64DecodeUtf8(str){
   return decodeURIComponent(escape(atob(str)));
 }
 
+const EN_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function weeklyFileName(d = new Date()){
+  const mon = EN_MONTHS[d.getMonth()];
+  const week = Math.ceil(d.getDate() / 7); // ۱ تا ۱-۷، ۲ تا ۸-۱۴، ۳ تا ۱۵-۲۱، ۴ تا ۲۲-۲۸، ۵ تا ۲۹-۳۱
+  return `data${mon}W${week}.json`;
+}
+
 async function submitToGithub(data){
   if (!CONFIG) CONFIG = await loadConfig();
-  const apiUrl = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.fileName}`;
+  const fileName = weeklyFileName();
+  const apiUrl = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${fileName}`;
   const headers = {
     'Authorization': `token ${CONFIG.token}`,
     'Content-Type': 'application/json'
