@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GLITCH // انتخاب مسیر</title>
+<style>
+:root{--bg:#050607;--green:#b7ff00;--cyan:#00f5ff;--red:#ff3158;--white:#edf5f4}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--white);font-family:Tahoma,Arial,sans-serif}
+body{overflow-x:hidden;background:radial-gradient(ellipse at 50% 42%,#101a16 0,#070909 42%,#030404 100%)}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:5;opacity:.13;background:repeating-linear-gradient(0deg,transparent 0 3px,#d5ffe9 4px,transparent 5px);mix-blend-mode:screen}
+.noise{position:fixed;inset:-50%;width:200%;height:200%;pointer-events:none;opacity:.045;z-index:4;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");animation:noise .2s steps(2) infinite}
+@keyframes noise{0%{transform:translate(0,0)}25%{transform:translate(2%,-1%)}50%{transform:translate(-1%,2%)}75%{transform:translate(1%,1%)}100%{transform:translate(-2%,-1%)}}
+.wrap{min-height:100svh;display:flex;align-items:center;justify-content:center;padding:28px 18px;position:relative}
+.gridbg{position:absolute;inset:0;opacity:.12;background-image:linear-gradient(#00f5ff 1px,transparent 1px),linear-gradient(90deg,#00f5ff 1px,transparent 1px);background-size:46px 46px;mask-image:radial-gradient(ellipse at center,#000 0%,transparent 72%);transform:perspective(500px) rotateX(10deg) scale(1.2)}
+.panel{width:min(760px,100%);position:relative;text-align:center;padding:clamp(28px,7vw,66px) clamp(18px,5vw,48px);border:1px solid #24382f;background:rgba(5,10,9,.82);box-shadow:0 0 0 5px #0a100d,0 0 50px #00f5ff0c,inset 0 0 40px #b7ff0008;clip-path:polygon(0 18px,18px 0,calc(100% - 18px) 0,100% 18px,100% calc(100% - 18px),calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px))}
+.kicker{font:700 11px/1.6 monospace;letter-spacing:4px;color:var(--green);direction:ltr;margin-bottom:24px}
+h1{font-size:clamp(34px,8vw,70px);line-height:1.15;margin:0 auto 14px;font-weight:900;letter-spacing:-2px;text-shadow:3px 0 var(--red),-3px 0 var(--cyan);animation:glitch 4s infinite;position:relative}
+@keyframes glitch{0%,91%,100%{transform:translate(0);clip-path:none}92%{transform:translate(3px,-1px);clip-path:inset(10% 0 65% 0)}94%{transform:translate(-3px,1px);clip-path:inset(58% 0 18% 0)}96%{transform:translate(1px,0);clip-path:none}}
+.subtitle{color:#8c9b95;font-size:14px;line-height:2;margin:0 auto 38px;max-width:430px}
+.buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;direction:rtl}
+.path{min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-decoration:none;color:var(--white);border:1px solid #35433b;background:#0a100d;padding:22px 12px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s;cursor:pointer}
+.path:before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 25%,#b7ff001b 50%,transparent 75%);transform:translateX(-120%);transition:transform .55s}
+.path:hover:before{transform:translateX(120%)}
+.path:hover{transform:translateY(-4px);border-color:var(--green);box-shadow:0 0 22px #b7ff0020}
+.path.advanced:hover{border-color:var(--cyan);box-shadow:0 0 22px #00f5ff20}
+.number{font:12px monospace;color:var(--green);letter-spacing:3px;direction:ltr}.advanced .number{color:var(--cyan)}
+.path strong{font-size:clamp(20px,4vw,27px)}
+.path small{font-size:11px;color:#84918a;letter-spacing:1px;direction:ltr}
+.arrow{font-size:20px;color:var(--green);transition:transform .2s}.advanced .arrow{color:var(--cyan)}.path:hover .arrow{transform:translateX(-5px)}
+.footer{margin-top:32px;display:flex;justify-content:space-between;gap:12px;color:#53635b;font:10px monospace;direction:ltr;letter-spacing:1.5px}.status{color:var(--green)}
+.corner{position:absolute;width:10px;height:10px;border-color:var(--green);border-style:solid}.tl{top:10px;left:10px;border-width:1px 0 0 1px}.tr{top:10px;right:10px;border-width:1px 1px 0 0}.bl{bottom:10px;left:10px;border-width:0 0 1px 1px}.br{bottom:10px;right:10px;border-width:0 1px 1px 0}
+@media(max-width:520px){.buttons{grid-template-columns:1fr}.path{min-height:112px}.footer{font-size:9px}.subtitle{margin-bottom:26px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<main class="wrap">
+  <div class="gridbg"></div>
+  <section class="panel" aria-label="انتخاب سطح">
+    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div class="kicker">SYSTEM ACCESS // 02 PATHS</div>
+    <h1>انتخاب مسیر</h1>
+    <p class="subtitle">سطح موردنظرت رو انتخاب کن و وارد شو.<br>یک مسیر برای شروع؛ یک مسیر برای حرفه‌ای‌ها.</p>
+    <div class="buttons">
+      <a class="path" href="jozve-intro-exam.html" target="_blank" rel="noopener noreferrer" aria-label="ورود به سایت مقدماتی">
+        <span class="number">LEVEL_01</span><strong>مقدماتی</strong><small>START FROM ZERO</small><span class="arrow">←</span>
+      </a>
+      <a class="path advanced" href="https://say4s.github.io/iranD/jozve-final-exam.html" target="_blank" rel="noopener noreferrer" aria-label="ورود به سایت پیشرفته">
+        <span class="number">LEVEL_02</span><strong>پیشرفته</strong><small>GO BEYOND LIMITS</small><span class="arrow">←</span>
+      </a>
+    </div>
+    <div class="footer"><span>GLITCH_PORTAL v1.0</span><span class="status">● SYSTEM ONLINE</span></div>
+  </section>
+</main>
+</body>
+</html>
