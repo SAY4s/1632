@@ -26,9 +26,10 @@
     font-family:"Lalezar","Vazirmatn","Tahoma",sans-serif;
     overflow:hidden;
     position:relative;
-    cursor:pointer;
     -webkit-tap-highlight-color:transparent;
     user-select:none;
+    -webkit-user-select:none;
+    -webkit-touch-callout:none;
   }
   button{font-family:inherit;}
   canvas#field{
@@ -37,7 +38,11 @@
     width:100%;
     height:100%;
     z-index:0;
+    touch-action:none;
+    cursor:grab;
   }
+  canvas#field.grabbing{cursor:grabbing;}
+  canvas#field.pointing{cursor:pointer;}
   .nebula{
     position:fixed;
     inset:0;
@@ -51,61 +56,26 @@
     transition:opacity .5s ease;
   }
 
-  /* ---------- constellation ---------- */
-  .sky{
+  /* ---------- position indicator ---------- */
+  .hud{
     position:fixed;
-    inset:0;
-    z-index:2;
-    transition:opacity .5s ease;
-  }
-  .sky.hidden{opacity:0; pointer-events:none; transition-duration:.2s;}
-  .sky.dim{opacity:.15; pointer-events:none;}
-  .cstar{
-    position:absolute;
-    width:52px;
-    height:52px;
-    margin:-26px 0 0 -26px;
-    padding:0;
-    border:none;
-    background:transparent;
-    color:var(--star-bright);
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    animation:starIn .7s ease both;
-  }
-  .cstar .g{
-    font-size:var(--s,18px);
-    line-height:1;
-    text-shadow:0 0 8px rgba(243,227,184,.8), 0 0 20px rgba(243,227,184,.35);
-    animation:twinkle var(--d,3.2s) ease-in-out infinite;
-    animation-delay:var(--dl,0s);
-    transition:transform .25s ease;
-  }
-  .cstar:hover .g, .cstar:focus-visible .g{transform:scale(1.35);}
-  .cstar:focus-visible{outline:none;}
-  .cstar .n{
-    position:absolute;
-    top:100%;
     left:50%;
-    transform:translate(-50%,-10px);
-    font-size:.64rem;
-    color:var(--star);
-    opacity:.5;
-    white-space:nowrap;
+    bottom:max(18px, env(safe-area-inset-bottom,0px));
+    transform:translateX(-50%);
+    z-index:3;
+    width:min(230px, 52vw);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:7px;
     pointer-events:none;
+    opacity:0;
+    transition:opacity .8s ease;
   }
-  .cstar.seen .g{color:#cdb9ff; text-shadow:0 0 8px rgba(160,140,255,.7), 0 0 18px rgba(160,140,255,.3);}
-  .cstar.seen .n{opacity:.3;}
-  @keyframes twinkle{
-    0%,100%{opacity:1;}
-    50%{opacity:.45;}
-  }
-  @keyframes starIn{
-    from{opacity:0; transform:scale(.3);}
-    to{opacity:1; transform:scale(1);}
-  }
+  .hud.show{opacity:1;}
+  .hud-text{font-size:.78rem; color:var(--star); opacity:.75; white-space:nowrap;}
+  .track{position:relative; width:100%; height:3px; border-radius:2px; background:rgba(243,227,184,.15);}
+  .thumb{position:absolute; top:0; height:100%; width:14%; border-radius:2px; background:rgba(243,227,184,.75);}
 
   /* ---------- sentence reader ---------- */
   .reader{
@@ -121,6 +91,7 @@
     opacity:0;
     pointer-events:none;
     transition:opacity .3s ease;
+    cursor:pointer;
   }
   .reader.show{opacity:1; pointer-events:auto;}
   .reader-box{
@@ -195,6 +166,7 @@
     backdrop-filter:blur(8px);
     cursor:default;
     user-select:text;
+    -webkit-user-select:text;
     opacity:0;
     pointer-events:none;
     transition:opacity .3s ease;
@@ -267,6 +239,18 @@
   .jump-result[hidden]{display:none;}
   .jump-result .num{display:block; font-size:.8rem; color:var(--star); opacity:.8;}
   .jump-result .txt{font-size:1.05rem; color:var(--star-bright);}
+  .sky-btn{
+    display:inline-block;
+    margin-top:6px;
+    border:1px solid rgba(243,227,184,.35);
+    border-radius:16px;
+    padding:4px 14px;
+    background:transparent;
+    color:var(--star);
+    font-size:.82rem;
+    cursor:pointer;
+  }
+  .sky-btn:active{background:rgba(243,227,184,.18);}
 
   .list-body{
     flex:1;
@@ -301,7 +285,7 @@
   }
 
   @media (prefers-reduced-motion: reduce){
-    .cstar, .cstar .g, .unlock-star{animation:none;}
+    .unlock-star{animation:none;}
     .row.hl{animation:none;}
   }
 </style>
@@ -310,7 +294,10 @@
 <canvas id="field"></canvas>
 <div class="nebula" id="nebula"></div>
 
-<div class="sky hidden" id="sky" role="group" aria-label="صورت‌فلکی جمله‌ها"></div>
+<div class="hud" id="hud" aria-hidden="true">
+  <div class="hud-text" id="hudText"></div>
+  <div class="track"><div class="thumb" id="thumb"></div></div>
+</div>
 
 <div class="reader" id="reader">
   <div class="reader-box" id="readerBox">
@@ -337,6 +324,7 @@
   <div class="jump-result" id="jumpResult" hidden>
     <span class="num" id="jumpResultNum"></span>
     <span class="txt" id="jumpResultTxt"></span>
+    <button class="sky-btn" id="skyBtn">✦ ببین توی آسمون کجاست</button>
   </div>
   <div class="list-body" id="listBody"></div>
 </div>
@@ -349,25 +337,28 @@ const fa = n => String(n).replace(/\d/g, d => FA_DIGITS[d]);
 const en = s => String(s)
   .replace(/[۰-۹]/g, d => FA_DIGITS.indexOf(d))
   .replace(/[٠-٩]/g, d => AR_DIGITS.indexOf(d));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 const $ = id => document.getElementById(id);
 const nebulaEl = $('nebula');
-const sky = $('sky');
 const reader = $('reader');
 const readerBox = $('readerBox');
 const readerNum = $('readerNum');
 const readerText = $('readerText');
 const errEl = $('err');
 const unlockStarEl = $('unlockStar');
+const hudEl = $('hud');
+const hudText = $('hudText');
+const thumbEl = $('thumb');
 
-/* ---------- starfield / warp canvas ---------- */
+/* ---------- canvas + background starfield / warp ---------- */
 const canvas = $('field');
 const ctx = canvas.getContext('2d');
-let W, H, cx, cy, fx, fy, stars = [];
+let W = 0, H = 0, cx = 0, cy = 0, fx = 0, fy = 0, bgStars = [];
 
 const STAR_COUNT_DIVISOR = 4500;
 
-function makeStar(){
+function makeBgStar(){
   const ang = Math.random()*Math.PI*2;
   const dist = 40 + Math.random()*Math.max(W,H)*0.7;
   return {
@@ -381,13 +372,17 @@ function makeStar(){
 }
 
 function resize(){
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = Math.round(W*dpr);
+  canvas.height = Math.round(H*dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   cx = W/2; cy = H/2;
   fx = cx; fy = cy;
   const count = Math.floor((W*H)/STAR_COUNT_DIVISOR);
-  stars = Array.from({length: count}, () => makeStar());
-  positionSky();
+  bgStars = Array.from({length: count}, makeBgStar);
+  layoutWorld();
 }
 
 let warping = false;
@@ -408,18 +403,385 @@ function warpZAt(elapsedMs, z0){
   return Math.max(WARP_Z_FLOOR, z0*Math.exp(-WARP_K*sec*sec));
 }
 
-/* constellation lines fade in/out toward consTarget */
-let consAlpha = 0;
-let consTarget = 0;
+/* ---------- the wide sky: every sentence is one star ---------- */
+let sentences = [];
+let ready = false;       // sentences loaded
+let worldReady = false;  // intro warp finished, sky can be dragged
 
+const starsAll = [];     // { i, u, v, r, ph, sp, x, y }
+const cells = [];        // constellations: { start, count, edges, col, row, x0, y0 }
+const labels = [];
+const seen = new Set();
+
+let rows = 3, cols = 1, cellW = 200, cellH = 220;
+let bandTop = 0, edgeX = 0, worldW = 0, maxCam = 0;
+let camX = 0;
+let firstLayout = true;
+
+let worldAlpha = 0;
+let worldTarget = 0;
+
+function labelOf(i){
+  return labels[i] || (labels[i] = fa(i + 1));
+}
+
+/* random points in the unit square, kept apart from each other */
+function scatter(n){
+  let minD = 0.78/Math.sqrt(n);
+  const pts = [];
+  let fails = 0;
+  while(pts.length < n){
+    const u = Math.random(), v = Math.random();
+    if(pts.every(p => Math.hypot(p.u-u, p.v-v) >= minD)){
+      pts.push({u, v});
+      fails = 0;
+    }else if(++fails > 80){
+      minD *= 0.92;
+      fails = 0;
+    }
+  }
+  return pts;
+}
+
+/* join the points into one tree: each new star links to its nearest connected neighbour */
+function minTree(pts){
+  const out = [];
+  const inTree = [0];
+  const rest = pts.map((_, i) => i).slice(1);
+  while(rest.length){
+    let best = null;
+    for(const r of rest){
+      for(const c of inTree){
+        const d = Math.hypot(pts[r].u-pts[c].u, pts[r].v-pts[c].v);
+        if(!best || d < best.d) best = { d, r, c };
+      }
+    }
+    out.push([best.c, best.r]);
+    inTree.push(best.r);
+    rest.splice(rest.indexOf(best.r), 1);
+  }
+  return out;
+}
+
+/* split the sentences into constellations of 6-10 consecutive numbers */
+function buildWorldData(total){
+  starsAll.length = 0;
+  cells.length = 0;
+  labels.length = 0;
+  let i = 0;
+  while(i < total){
+    const remaining = total - i;
+    let size = 6 + Math.floor(Math.random()*5);
+    if(remaining - size < 4) size = remaining;
+    const pts = scatter(size);
+    for(let k = 0; k < size; k++){
+      starsAll.push({
+        i: i + k,
+        u: pts[k].u,
+        v: pts[k].v,
+        r: 6 + Math.random()*5,
+        ph: Math.random()*Math.PI*2,
+        sp: 0.0015 + Math.random()*0.003,
+        x: 0, y: 0
+      });
+    }
+    cells.push({
+      start: i,
+      count: size,
+      edges: size > 1 ? minTree(pts).map(([a, b]) => [i + a, i + b]) : [],
+      col: 0, row: 0, x0: 0, y0: 0
+    });
+    i += size;
+  }
+}
+
+/* constellations fill the sky column by column; number 1 sits at the right edge (RTL) */
+function layoutWorld(){
+  if(!starsAll.length) return;
+  const progress = maxCam > 0 ? camX/maxCam : 1;
+
+  bandTop = Math.max(64, H*0.10);
+  const bandBottom = H - Math.max(78, H*0.11);
+  const bandH = Math.max(240, bandBottom - bandTop);
+  rows = Math.max(2, Math.round(bandH/210));
+  cellH = bandH/rows;
+  cellW = clamp(cellH*0.95, 170, 260);
+  cols = Math.ceil(cells.length/rows);
+  edgeX = W*0.25;
+  worldW = cols*cellW + 2*edgeX;
+  maxCam = Math.max(0, worldW - W);
+
+  const padX = Math.min(26, cellW*0.12);
+  const padY = Math.min(26, cellH*0.12);
+  cells.forEach((cell, k) => {
+    cell.col = Math.floor(k/rows);
+    cell.row = k % rows;
+    cell.x0 = edgeX + (cols - 1 - cell.col)*cellW;
+    cell.y0 = bandTop + cell.row*cellH;
+    for(let i = cell.start; i < cell.start + cell.count; i++){
+      const s = starsAll[i];
+      s.x = cell.x0 + padX + s.u*(cellW - 2*padX);
+      s.y = cell.y0 + padY + s.v*(cellH - 2*padY);
+    }
+  });
+
+  camX = firstLayout ? maxCam : clamp(progress*maxCam, 0, maxCam);
+  firstLayout = false;
+}
+
+/* ---------- drawing the sky ---------- */
+function makeHalo(rgb){
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, `rgba(${rgb},0.55)`);
+  grad.addColorStop(0.35, `rgba(${rgb},0.18)`);
+  grad.addColorStop(1, `rgba(${rgb},0)`);
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  return c;
+}
+const haloGold = makeHalo('243,227,184');
+const haloViolet = makeHalo('170,150,255');
+
+function drawStarShape(x, y, r){
+  const k = r*0.18;
+  ctx.beginPath();
+  ctx.moveTo(x, y - r);
+  ctx.quadraticCurveTo(x + k, y - k, x + r, y);
+  ctx.quadraticCurveTo(x + k, y + k, x, y + r);
+  ctx.quadraticCurveTo(x - k, y + k, x - r, y);
+  ctx.quadraticCurveTo(x - k, y - k, x, y - r);
+  ctx.closePath();
+  ctx.fill();
+}
+
+let hoveredIdx = -1;
+let pulse = null; // { i, t0 }
+
+function cellVisible(cell, margin){
+  const left = cell.x0 - camX;
+  return left < W + margin && left + cellW > -margin;
+}
+
+function drawWorld(t){
+  if(worldAlpha < 0.01 || !starsAll.length) return;
+  ctx.save();
+  ctx.globalAlpha = worldAlpha;
+
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(243,227,184,0.26)';
+  ctx.beginPath();
+  for(const cell of cells){
+    if(!cellVisible(cell, 40)) continue;
+    for(const [a, b] of cell.edges){
+      const A = starsAll[a], B = starsAll[b];
+      ctx.moveTo(A.x - camX, A.y);
+      ctx.lineTo(B.x - camX, B.y);
+    }
+  }
+  ctx.stroke();
+
+  ctx.font = '10px Lalezar, Vazirmatn, Tahoma, sans-serif';
+  ctx.textAlign = 'center';
+  for(const cell of cells){
+    if(!cellVisible(cell, 40)) continue;
+    for(let i = cell.start; i < cell.start + cell.count; i++){
+      const s = starsAll[i];
+      const sx = s.x - camX;
+      if(sx < -30 || sx > W + 30) continue;
+      const isSeen = seen.has(s.i);
+      const hov = hoveredIdx === s.i;
+      const r = s.r*(hov ? 1.35 : 1);
+      const tw = 0.78 + 0.22*Math.sin(t*s.sp + s.ph);
+
+      ctx.globalAlpha = worldAlpha*tw;
+      const halo = r*5;
+      ctx.drawImage(isSeen ? haloViolet : haloGold, sx - halo/2, s.y - halo/2, halo, halo);
+      ctx.fillStyle = isSeen ? '#cdb9ff' : '#fff7e0';
+      drawStarShape(sx, s.y, r);
+
+      ctx.globalAlpha = worldAlpha*(hov ? 0.95 : 0.55);
+      ctx.fillStyle = isSeen ? 'rgb(205,185,255)' : 'rgb(243,227,184)';
+      ctx.fillText(labelOf(s.i), sx, s.y + r + 13);
+    }
+  }
+
+  if(pulse){
+    const el = t - pulse.t0;
+    if(el > 2600){
+      pulse = null;
+    }else{
+      const s = starsAll[pulse.i];
+      const sx = s.x - camX;
+      ctx.lineWidth = 1.5;
+      for(let k = 0; k < 3; k++){
+        const p = ((el - k*350)/1600);
+        if(p < 0 || p > 1) continue;
+        ctx.globalAlpha = worldAlpha*(1 - p)*0.85;
+        ctx.strokeStyle = '#fff7e0';
+        ctx.beginPath();
+        ctx.arc(sx, s.y, 14 + p*48, 0, Math.PI*2);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------- camera: drag, inertia, wheel, keys, animated pans ---------- */
+let dragging = false;
+let dragId = null;
+let startX = 0, startY = 0, lastX = 0, lastT = 0, moved = 0;
+let vel = 0; // px per ms, positive = camera moves right
+let panAnim = null;
+let hintGone = false;
+
+function setCam(v){
+  const c = clamp(v, 0, maxCam);
+  if(c !== v) vel = 0;
+  camX = c;
+}
+
+function panTo(target, dur){
+  panAnim = { from: camX, to: clamp(target, 0, maxCam), t0: performance.now(), dur: dur || 900 };
+  vel = 0;
+}
+
+function stepCamera(t, dt){
+  if(panAnim){
+    const p = Math.min(1, (t - panAnim.t0)/panAnim.dur);
+    const e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3)/2;
+    camX = panAnim.from + (panAnim.to - panAnim.from)*e;
+    if(p >= 1) panAnim = null;
+  }else if(!dragging && Math.abs(vel) > 0.01){
+    setCam(camX + vel*dt);
+    vel *= Math.pow(0.94, dt/16.67);
+  }
+}
+
+function hitTest(px, py, radius){
+  let best = -1, bestD = radius;
+  for(const cell of cells){
+    if(!cellVisible(cell, 0)) continue;
+    for(let i = cell.start; i < cell.start + cell.count; i++){
+      const s = starsAll[i];
+      const d = Math.hypot(s.x - camX - px, s.y - py);
+      if(d < bestD){ bestD = d; best = s.i; }
+    }
+  }
+  return best;
+}
+
+canvas.addEventListener('pointerdown', (e) => {
+  if(!worldReady || readerOpen || listOpen || dragId !== null) return;
+  dragId = e.pointerId;
+  try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
+  dragging = true;
+  startX = lastX = e.clientX;
+  startY = e.clientY;
+  lastT = performance.now();
+  moved = 0;
+  vel = 0;
+  panAnim = null;
+  canvas.classList.add('grabbing');
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if(dragging && e.pointerId === dragId){
+    const now = performance.now();
+    const dx = e.clientX - lastX;
+    const dt = Math.max(1, now - lastT);
+    setCam(camX - dx);
+    moved = Math.max(moved, Math.hypot(e.clientX - startX, e.clientY - startY));
+    vel = vel*0.6 + (-dx/dt)*0.4;
+    lastX = e.clientX;
+    lastT = now;
+    if(moved > 20) hintGone = true;
+  }else if(e.pointerType === 'mouse' && worldReady && !readerOpen && !listOpen){
+    hoveredIdx = hitTest(e.clientX, e.clientY, 22);
+    canvas.classList.toggle('pointing', hoveredIdx >= 0);
+  }
+});
+
+function endDrag(e){
+  if(!dragging || e.pointerId !== dragId) return;
+  dragging = false;
+  dragId = null;
+  canvas.classList.remove('grabbing');
+  try{ canvas.releasePointerCapture(e.pointerId); }catch(_){}
+  const quick = performance.now() - lastT;
+  if(e.type === 'pointerup' && moved < 8){
+    vel = 0;
+    const radius = e.pointerType === 'mouse' ? 24 : 32;
+    const i = hitTest(e.clientX, e.clientY, radius);
+    if(i >= 0) openReader(starsAll[i]);
+  }else if(quick > 80){
+    vel = 0;
+  }
+}
+canvas.addEventListener('pointerup', endDrag);
+canvas.addEventListener('pointercancel', endDrag);
+canvas.addEventListener('pointerleave', () => {
+  if(!dragging){ hoveredIdx = -1; canvas.classList.remove('pointing'); }
+});
+
+canvas.addEventListener('wheel', (e) => {
+  if(!worldReady || readerOpen || listOpen) return;
+  e.preventDefault();
+  panAnim = null;
+  const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+  setCam(camX - d);
+  hintGone = true;
+}, { passive: false });
+
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape'){
+    if(listOpen) closeList();
+    else if(readerOpen) closeReader();
+    return;
+  }
+  if(!worldReady || readerOpen || listOpen) return;
+  if(e.key === 'ArrowLeft'){ panTo((panAnim ? panAnim.to : camX) - W*0.7, 500); hintGone = true; }
+  else if(e.key === 'ArrowRight'){ panTo((panAnim ? panAnim.to : camX) + W*0.7, 500); hintGone = true; }
+});
+
+/* ---------- HUD ---------- */
+let hudLast = '';
+function updateHud(){
+  if(!worldReady) return;
+  let text;
+  if(!hintGone){
+    text = 'برای دیدن بقیه‌ی ستاره‌ها بکش';
+  }else{
+    let lo = Infinity, hi = -1;
+    for(const cell of cells){
+      if(!cellVisible(cell, 0)) continue;
+      for(let i = cell.start; i < cell.start + cell.count; i++){
+        const sx = starsAll[i].x - camX;
+        if(sx >= 0 && sx <= W){ if(i < lo) lo = i; if(i > hi) hi = i; }
+      }
+    }
+    text = hi >= 0 ? fa(lo + 1) + ' تا ' + fa(hi + 1) : '';
+  }
+  if(text !== hudLast){ hudText.textContent = text; hudLast = text; }
+  const p = maxCam > 0 ? 1 - camX/maxCam : 0;
+  thumbEl.style.right = (p*86).toFixed(2) + '%';
+}
+
+/* ---------- main loop ---------- */
+let lastFrame = 0;
 function drawFrame(t){
-  ctx.clearRect(0,0,W,H);
-  consAlpha += (consTarget - consAlpha) * 0.08;
+  const dt = lastFrame ? Math.min(50, t - lastFrame) : 16;
+  lastFrame = t;
+  ctx.clearRect(0, 0, W, H);
+  worldAlpha += (worldTarget - worldAlpha)*0.1;
+  stepCamera(t, dt);
 
   if(warping){
     const elapsed = t - warpStart;
-
-    for(const s of stars){
+    for(const s of bgStars){
       const beforeZ = warpZAt(lastWarpElapsed, s.warpZ0);
       const afterZ = warpZAt(elapsed, s.warpZ0);
       const before = project(s, beforeZ);
@@ -436,40 +798,42 @@ function drawFrame(t){
 
     if(elapsed >= WARP_DURATION){
       warping = false;
-      for(const s of stars){ s.z = 0.35 + Math.random()*0.65; s.dist = 40 + Math.random()*Math.max(W,H)*0.7; s.ang = Math.random()*Math.PI*2; }
+      for(const s of bgStars){ s.z = 0.35 + Math.random()*0.65; s.dist = 40 + Math.random()*Math.max(W,H)*0.7; s.ang = Math.random()*Math.PI*2; }
       nebulaEl.style.opacity = '1';
-      showConstellation();
+      worldReady = true;
+      worldTarget = 1;
+      hudEl.classList.add('show');
     }
-  } else {
-    for(const s of stars){
+  }else{
+    // slow parallax: the background drifts a little as the sky is dragged
+    const par = -camX*0.1;
+    for(const s of bgStars){
       const tw = Math.sin(t*s.twSpeed + s.phase)*0.35;
       const a = Math.max(0, Math.min(1, s.baseA + tw));
       const pos = project(s);
+      const x = (((pos.x + par*s.z) % W) + W) % W;
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, s.r, 0, Math.PI*2);
+      ctx.arc(x, pos.y, s.r, 0, Math.PI*2);
       ctx.fillStyle = `rgba(243,227,184,${a})`;
       ctx.fill();
     }
-
-    if(consAlpha > 0.01 && nodes.length > 1){
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = `rgba(243,227,184,${(0.28*consAlpha).toFixed(3)})`;
-      ctx.beginPath();
-      for(const [i, j] of edges){
-        ctx.moveTo(nodes[i].nx*W, nodes[i].ny*H);
-        ctx.lineTo(nodes[j].nx*W, nodes[j].ny*H);
-      }
-      ctx.stroke();
-    }
+    drawWorld(t);
+    updateHud();
   }
   requestAnimationFrame(drawFrame);
 }
 
-/* ---------- sentence data ---------- */
-let sentences = [];
-let ready = false;
-let deck = [];
+function startWarp(){
+  if(!ready || warping) return;
+  for(const s of bgStars){ s.warpZ0 = s.z; }
+  lastWarpElapsed = 0;
+  warping = true;
+  warpStart = performance.now();
+  nebulaEl.style.opacity = '0.35';
+  worldTarget = 0;
+}
 
+/* ---------- loading ---------- */
 async function loadSentences(){
   try{
     const res = await fetch('1632.json?t=' + Date.now(), { cache: 'no-store' });
@@ -477,6 +841,8 @@ async function loadSentences(){
     const data = await res.json();
     if(!Array.isArray(data) || data.length === 0) throw new Error('empty');
     sentences = data;
+    buildWorldData(sentences.length);
+    layoutWorld();
     ready = true;
     $('listCount').textContent = fa(sentences.length);
     startWarp();
@@ -486,139 +852,24 @@ async function loadSentences(){
   }
 }
 
-function shuffle(a){
-  for(let i = a.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-/* draws without repeats until every sentence has appeared once */
-function pickIndices(k){
-  k = Math.min(k, sentences.length);
-  if(deck.length < k) deck = shuffle(Array.from(sentences.keys()));
-  return deck.splice(0, k);
-}
-
-/* ---------- constellation ---------- */
-let nodes = [];   // { n, nx, ny, el }
-let edges = [];   // [i, j]
-
-function starCount(){
-  return Math.max(9, Math.min(18, Math.round((W*H)/36000)));
-}
-
-function placePoints(k){
-  const mx = Math.max(36, W*0.08);
-  const top = Math.max(70, H*0.12);
-  const bottom = H - Math.max(80, H*0.12);
-  const w = W - 2*mx, h = bottom - top;
-  let minD = Math.sqrt((w*h)/k) * 0.62;
-  const pts = [];
-  let fails = 0;
-  while(pts.length < k){
-    const x = mx + Math.random()*w;
-    const y = top + Math.random()*h;
-    if(pts.every(p => Math.hypot(p.x-x, p.y-y) >= minD)){
-      pts.push({x, y});
-      fails = 0;
-    }else if(++fails > 60){
-      minD *= 0.9;
-      fails = 0;
-    }
-  }
-  return pts.map(p => ({ nx: p.x/W, ny: p.y/H }));
-}
-
-/* connect the points into one tree: each new star joins its nearest connected neighbour */
-function buildEdges(pts){
-  const out = [];
-  const inTree = [0];
-  const rest = pts.map((_, i) => i).slice(1);
-  while(rest.length){
-    let best = null;
-    for(const r of rest){
-      for(const c of inTree){
-        const d = Math.hypot((pts[r].nx-pts[c].nx)*W, (pts[r].ny-pts[c].ny)*H);
-        if(!best || d < best.d) best = { d, r, c };
-      }
-    }
-    out.push([best.c, best.r]);
-    inTree.push(best.r);
-    rest.splice(rest.indexOf(best.r), 1);
-  }
-  return out;
-}
-
-function buildSky(){
-  sky.textContent = '';
-  const idx = pickIndices(starCount());
-  const pts = placePoints(idx.length);
-  nodes = idx.map((n, i) => ({ n, nx: pts[i].nx, ny: pts[i].ny, el: null }));
-  edges = buildEdges(pts);
-
-  for(const node of nodes){
-    const el = document.createElement('button');
-    el.type = 'button';
-    el.className = 'cstar';
-    el.style.setProperty('--s', (14 + Math.random()*12).toFixed(1) + 'px');
-    el.style.setProperty('--d', (2.4 + Math.random()*2.6).toFixed(2) + 's');
-    el.style.setProperty('--dl', (-Math.random()*4).toFixed(2) + 's');
-    el.setAttribute('aria-label', 'جمله‌ی ' + fa(node.n + 1));
-    el.innerHTML = '<span class="g">✦</span><span class="n">' + fa(node.n + 1) + '</span>';
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openReader(node);
-    });
-    node.el = el;
-    sky.appendChild(el);
-  }
-  positionSky();
-}
-
-function positionSky(){
-  for(const node of nodes){
-    if(!node.el) continue;
-    node.el.style.left = (node.nx*W).toFixed(1) + 'px';
-    node.el.style.top = (node.ny*H).toFixed(1) + 'px';
-  }
-}
-
-function showConstellation(){
-  buildSky();
-  sky.classList.remove('hidden', 'dim');
-  consTarget = 1;
-  scheduleAuto();
-}
-
-function startWarp(){
-  if(!ready || warping) return;
-  clearTimeout(autoTimer);
-  for(const s of stars){ s.warpZ0 = s.z; }
-  lastWarpElapsed = 0;
-  warping = true;
-  warpStart = performance.now();
-  nebulaEl.style.opacity = '0.35';
-  sky.classList.add('hidden');
-  consTarget = 0;
-}
-
 /* ---------- reading one sentence ---------- */
 let readerOpen = false;
-let currentNode = null;
+let readerOpenedAt = 0;
+let currentStar = null;
 let openedCount = 0;
 
-function openReader(node){
-  clearTimeout(autoTimer);
+function openReader(star){
   readerOpen = true;
-  currentNode = node;
+  readerOpenedAt = performance.now();
+  currentStar = star;
+  hoveredIdx = -1;
+  canvas.classList.remove('pointing');
 
-  readerNum.textContent = fa(node.n + 1) + ' از ' + fa(sentences.length);
-  readerText.textContent = sentences[node.n];
+  readerNum.textContent = fa(star.i + 1) + ' از ' + fa(sentences.length);
+  readerText.textContent = sentences[star.i];
 
-  const dx = node.nx*W - cx;
-  const dy = node.ny*H - cy;
+  const dx = (star.x - camX) - cx;
+  const dy = star.y - cy;
   readerBox.style.transition = 'none';
   readerBox.style.transform = `translate(${dx}px, ${dy}px) scale(0.12)`;
   readerBox.style.opacity = '0';
@@ -630,8 +881,7 @@ function openReader(node){
   readerBox.style.filter = 'blur(0px)';
 
   reader.classList.add('show');
-  sky.classList.add('dim');
-  consTarget = 0.2;
+  worldTarget = 0.2;
 
   openedCount++;
   if(openedCount >= 3) unlockStarEl.classList.add('show');
@@ -643,34 +893,16 @@ function closeReader(){
   reader.classList.remove('show');
   readerBox.style.transition = 'opacity .25s ease';
   readerBox.style.opacity = '0';
-  sky.classList.remove('dim');
-  consTarget = 1;
-  if(currentNode && currentNode.el) currentNode.el.classList.add('seen');
-  currentNode = null;
-  scheduleAuto();
+  worldTarget = 1;
+  if(currentStar) seen.add(currentStar.i);
+  currentStar = null;
 }
 
-/* ---------- body click: new constellation / close reader ---------- */
-document.body.addEventListener('click', (e) => {
-  if(readerOpen){ closeReader(); return; }
-  if(listOpen) return;
-  fx = e.clientX;
-  fy = e.clientY;
-  startWarp();
+reader.addEventListener('click', () => {
+  // ignore the synthetic click that follows the tap which opened the reader
+  if(performance.now() - readerOpenedAt < 350) return;
+  closeReader();
 });
-
-/* after 16.32 s of no interaction, drift on to a new constellation */
-const AUTO_INTERVAL = 16320;
-let autoTimer = null;
-function scheduleAuto(){
-  clearTimeout(autoTimer);
-  autoTimer = setTimeout(() => {
-    if(readerOpen || listOpen) return;
-    fx = cx;
-    fy = cy;
-    startWarp();
-  }, AUTO_INTERVAL);
-}
 
 /* ---------- all sentences, with number lookup ---------- */
 const listOverlay = $('listOverlay');
@@ -681,6 +913,7 @@ const jumpResult = $('jumpResult');
 let listOpen = false;
 let listBuilt = false;
 let hlRow = null;
+let jumpedNumber = 0;
 
 function buildList(){
   if(listBuilt) return;
@@ -703,9 +936,10 @@ function buildList(){
 
 function openList(){
   if(!ready) return;
-  clearTimeout(autoTimer);
   buildList();
   listOpen = true;
+  dragging = false;
+  dragId = null;
   listOverlay.classList.add('show');
 }
 
@@ -714,7 +948,6 @@ function closeList(){
   listOpen = false;
   listOverlay.classList.remove('show');
   jumpInput.blur();
-  scheduleAuto();
 }
 
 function jumpToNumber(){
@@ -732,6 +965,7 @@ function jumpToNumber(){
     return;
   }
   jumpMsg.textContent = '';
+  jumpedNumber = n;
   $('jumpResultNum').textContent = 'جمله‌ی ' + fa(n) + ' از ' + fa(total);
   $('jumpResultTxt').textContent = sentences[n - 1];
   jumpResult.hidden = false;
@@ -746,27 +980,22 @@ function jumpToNumber(){
   jumpInput.blur();
 }
 
-unlockStarEl.addEventListener('click', (e) => {
-  e.stopPropagation();
-  openList();
-});
-$('listClose').addEventListener('click', (e) => {
-  e.stopPropagation();
+/* close the list and fly the camera to that star */
+function showInSky(){
+  if(!jumpedNumber) return;
+  const star = starsAll[jumpedNumber - 1];
   closeList();
-});
-$('jumpBtn').addEventListener('click', (e) => {
-  e.stopPropagation();
-  jumpToNumber();
-});
+  hintGone = true;
+  panTo(star.x - W/2, 1200);
+  pulse = { i: star.i, t0: performance.now() };
+}
+
+unlockStarEl.addEventListener('click', openList);
+$('listClose').addEventListener('click', closeList);
+$('jumpBtn').addEventListener('click', jumpToNumber);
+$('skyBtn').addEventListener('click', showInSky);
 jumpInput.addEventListener('keydown', (e) => {
   if(e.key === 'Enter'){ e.preventDefault(); jumpToNumber(); }
-});
-listOverlay.addEventListener('click', (e) => e.stopPropagation());
-
-document.addEventListener('keydown', (e) => {
-  if(e.key !== 'Escape') return;
-  if(listOpen) closeList();
-  else if(readerOpen) closeReader();
 });
 
 window.addEventListener('resize', resize);
