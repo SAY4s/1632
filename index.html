@@ -409,7 +409,8 @@ const labels = [];
 const seen = new Set();
 
 let gridCols = 1, gridRows = 1, cellW = 200, cellH = 210;
-let worldW = 0, worldH = 0, maxCamX = 0, maxCamY = 0;
+let worldW = 0, worldH = 0;
+let minCamX = 0, maxCamX = 0, minCamY = 0, maxCamY = 0; // camera limits, taken from the outermost stars
 let camX = 0, camY = 0;
 let firstLayout = true;
 
@@ -484,7 +485,7 @@ function buildWorldData(total){
       start: i,
       count: size,
       edges: size > 1 ? minTree(pts).map(([a, b]) => [i + a, i + b]) : [],
-      col: 0, row: 0, x0: 0, y0: 0
+      col: 0, row: 0, x0: 0, y0: 0, w: 0
     });
     i += size;
   }
@@ -493,36 +494,52 @@ function buildWorldData(total){
 /* constellations form a grid: row by row, starting at the top-right corner (RTL) */
 function layoutWorld(){
   if(!starsAll.length) return;
-  const progX = maxCamX > 0 ? camX/maxCamX : 1;
-  const progY = maxCamY > 0 ? camY/maxCamY : 0;
+  // where the camera is inside its current limits (0..1), so a resize keeps the view roughly in place
+  const rangeX = maxCamX - minCamX, rangeY = maxCamY - minCamY;
+  const progX = rangeX > 0 ? (camX - minCamX)/rangeX : 1;
+  const progY = rangeY > 0 ? (camY - minCamY)/rangeY : 0;
 
   const side = clamp(Math.min(W, H)*0.52, 190, 280);
   cellW = side;
   cellH = side*1.05;
   gridCols = Math.max(4, Math.ceil(Math.sqrt(cells.length*1.35)));
   gridRows = Math.ceil(cells.length/gridCols);
-  const edgeX = W*0.2, edgeY = H*0.2;
-  worldW = gridCols*cellW + 2*edgeX;
-  worldH = gridRows*cellH + 2*edgeY;
-  maxCamX = Math.max(0, worldW - W);
-  maxCamY = Math.max(0, worldH - H);
 
   const padX = Math.min(26, cellW*0.12);
   const padY = Math.min(26, cellH*0.12);
+  let loX = Infinity, hiX = -Infinity, loY = Infinity, hiY = -Infinity;
+  const lastRowCount = cells.length - (gridRows - 1)*gridCols;
   cells.forEach((cell, k) => {
     cell.row = Math.floor(k/gridCols);
     cell.col = k % gridCols;
-    cell.x0 = edgeX + (gridCols - 1 - cell.col)*cellW;
-    cell.y0 = edgeY + cell.row*cellH;
+    // a short last row is stretched to the full width, so the bottom corners are not left empty
+    const inRow = cell.row === gridRows - 1 ? lastRowCount : gridCols;
+    cell.w = gridCols*cellW/inRow;
+    cell.x0 = gridCols*cellW - (cell.col + 1)*cell.w;
+    cell.y0 = cell.row*cellH;
     for(let i = cell.start; i < cell.start + cell.count; i++){
       const s = starsAll[i];
-      s.x = cell.x0 + padX + s.u*(cellW - 2*padX);
+      s.x = cell.x0 + padX + s.u*(cell.w - 2*padX);
       s.y = cell.y0 + padY + s.v*(cellH - 2*padY);
+      if(s.x < loX) loX = s.x;
+      if(s.x > hiX) hiX = s.x;
+      if(s.y < loY) loY = s.y;
+      if(s.y > hiY) hiY = s.y;
     }
   });
+  worldW = hiX - loX;
+  worldH = hiY - loY;
 
-  camX = firstLayout ? maxCamX : clamp(progX*maxCamX, 0, maxCamX);
-  camY = firstLayout ? 0 : clamp(progY*maxCamY, 0, maxCamY);
+  // the camera may travel until the outermost star sits a small margin from the screen edge
+  const mSide = 28, mTop = 26, mBottom = 44; // bottom is larger: the number label sits under each star
+  minCamX = loX - mSide;
+  maxCamX = Math.max(minCamX, hiX + mSide - W);
+  minCamY = loY - mTop;
+  maxCamY = Math.max(minCamY, hiY + mBottom - H);
+
+  // first view: top-right corner, where number 1 lives
+  camX = firstLayout ? maxCamX : clamp(minCamX + progX*(maxCamX - minCamX), minCamX, maxCamX);
+  camY = firstLayout ? minCamY : clamp(minCamY + progY*(maxCamY - minCamY), minCamY, maxCamY);
   firstLayout = false;
 }
 
@@ -560,7 +577,7 @@ let pulse = null; // { i, t0 }
 function cellVisible(cell, margin){
   const left = cell.x0 - camX;
   const top = cell.y0 - camY;
-  return left < W + margin && left + cellW > -margin &&
+  return left < W + margin && left + cell.w > -margin &&
          top < H + margin && top + cellH > -margin;
 }
 
@@ -640,8 +657,8 @@ let panAnim = null;
 let hintGone = false;
 
 function setCam(x, y){
-  const cxn = clamp(x, 0, maxCamX);
-  const cyn = clamp(y, 0, maxCamY);
+  const cxn = clamp(x, minCamX, maxCamX);
+  const cyn = clamp(y, minCamY, maxCamY);
   if(cxn !== x) velX = 0;
   if(cyn !== y) velY = 0;
   camX = cxn;
@@ -651,7 +668,7 @@ function setCam(x, y){
 function panTo(x, y, dur){
   panAnim = {
     fromX: camX, fromY: camY,
-    toX: clamp(x, 0, maxCamX), toY: clamp(y, 0, maxCamY),
+    toX: clamp(x, minCamX, maxCamX), toY: clamp(y, minCamY, maxCamY),
     t0: performance.now(), dur: dur || 900
   };
   velX = velY = 0;
