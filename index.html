@@ -74,8 +74,6 @@
   }
   .hud.show{opacity:1;}
   .hud-text{font-size:.78rem; color:var(--star); opacity:.75; white-space:nowrap;}
-  .track{position:relative; width:100%; height:3px; border-radius:2px; background:rgba(243,227,184,.15);}
-  .thumb{position:absolute; top:0; height:100%; width:14%; border-radius:2px; background:rgba(243,227,184,.75);}
 
   /* ---------- sentence reader ---------- */
   .reader{
@@ -295,8 +293,7 @@
 <div class="nebula" id="nebula"></div>
 
 <div class="hud" id="hud" aria-hidden="true">
-  <div class="hud-text" id="hudText"></div>
-  <div class="track"><div class="thumb" id="thumb"></div></div>
+  <div class="hud-text">همه‌جا بکش و بگرد</div>
 </div>
 
 <div class="reader" id="reader">
@@ -348,8 +345,6 @@ const readerText = $('readerText');
 const errEl = $('err');
 const unlockStarEl = $('unlockStar');
 const hudEl = $('hud');
-const hudText = $('hudText');
-const thumbEl = $('thumb');
 
 /* ---------- canvas + background starfield / warp ---------- */
 const canvas = $('field');
@@ -403,7 +398,7 @@ function warpZAt(elapsedMs, z0){
   return Math.max(WARP_Z_FLOOR, z0*Math.exp(-WARP_K*sec*sec));
 }
 
-/* ---------- the wide sky: every sentence is one star ---------- */
+/* ---------- the big sky: every sentence is one star ---------- */
 let sentences = [];
 let ready = false;       // sentences loaded
 let worldReady = false;  // intro warp finished, sky can be dragged
@@ -413,9 +408,9 @@ const cells = [];        // constellations: { start, count, edges, col, row, x0,
 const labels = [];
 const seen = new Set();
 
-let rows = 3, cols = 1, cellW = 200, cellH = 220;
-let bandTop = 0, edgeX = 0, worldW = 0, maxCam = 0;
-let camX = 0;
+let gridCols = 1, gridRows = 1, cellW = 200, cellH = 210;
+let worldW = 0, worldH = 0, maxCamX = 0, maxCamY = 0;
+let camX = 0, camY = 0;
 let firstLayout = true;
 
 let worldAlpha = 0;
@@ -495,29 +490,30 @@ function buildWorldData(total){
   }
 }
 
-/* constellations fill the sky column by column; number 1 sits at the right edge (RTL) */
+/* constellations form a grid: row by row, starting at the top-right corner (RTL) */
 function layoutWorld(){
   if(!starsAll.length) return;
-  const progress = maxCam > 0 ? camX/maxCam : 1;
+  const progX = maxCamX > 0 ? camX/maxCamX : 1;
+  const progY = maxCamY > 0 ? camY/maxCamY : 0;
 
-  bandTop = Math.max(64, H*0.10);
-  const bandBottom = H - Math.max(78, H*0.11);
-  const bandH = Math.max(240, bandBottom - bandTop);
-  rows = Math.max(2, Math.round(bandH/210));
-  cellH = bandH/rows;
-  cellW = clamp(cellH*0.95, 170, 260);
-  cols = Math.ceil(cells.length/rows);
-  edgeX = W*0.25;
-  worldW = cols*cellW + 2*edgeX;
-  maxCam = Math.max(0, worldW - W);
+  const side = clamp(Math.min(W, H)*0.52, 190, 280);
+  cellW = side;
+  cellH = side*1.05;
+  gridCols = Math.max(4, Math.ceil(Math.sqrt(cells.length*1.35)));
+  gridRows = Math.ceil(cells.length/gridCols);
+  const edgeX = W*0.2, edgeY = H*0.2;
+  worldW = gridCols*cellW + 2*edgeX;
+  worldH = gridRows*cellH + 2*edgeY;
+  maxCamX = Math.max(0, worldW - W);
+  maxCamY = Math.max(0, worldH - H);
 
   const padX = Math.min(26, cellW*0.12);
   const padY = Math.min(26, cellH*0.12);
   cells.forEach((cell, k) => {
-    cell.col = Math.floor(k/rows);
-    cell.row = k % rows;
-    cell.x0 = edgeX + (cols - 1 - cell.col)*cellW;
-    cell.y0 = bandTop + cell.row*cellH;
+    cell.row = Math.floor(k/gridCols);
+    cell.col = k % gridCols;
+    cell.x0 = edgeX + (gridCols - 1 - cell.col)*cellW;
+    cell.y0 = edgeY + cell.row*cellH;
     for(let i = cell.start; i < cell.start + cell.count; i++){
       const s = starsAll[i];
       s.x = cell.x0 + padX + s.u*(cellW - 2*padX);
@@ -525,7 +521,8 @@ function layoutWorld(){
     }
   });
 
-  camX = firstLayout ? maxCam : clamp(progress*maxCam, 0, maxCam);
+  camX = firstLayout ? maxCamX : clamp(progX*maxCamX, 0, maxCamX);
+  camY = firstLayout ? 0 : clamp(progY*maxCamY, 0, maxCamY);
   firstLayout = false;
 }
 
@@ -562,7 +559,9 @@ let pulse = null; // { i, t0 }
 
 function cellVisible(cell, margin){
   const left = cell.x0 - camX;
-  return left < W + margin && left + cellW > -margin;
+  const top = cell.y0 - camY;
+  return left < W + margin && left + cellW > -margin &&
+         top < H + margin && top + cellH > -margin;
 }
 
 function drawWorld(t){
@@ -577,8 +576,8 @@ function drawWorld(t){
     if(!cellVisible(cell, 40)) continue;
     for(const [a, b] of cell.edges){
       const A = starsAll[a], B = starsAll[b];
-      ctx.moveTo(A.x - camX, A.y);
-      ctx.lineTo(B.x - camX, B.y);
+      ctx.moveTo(A.x - camX, A.y - camY);
+      ctx.lineTo(B.x - camX, B.y - camY);
     }
   }
   ctx.stroke();
@@ -590,7 +589,8 @@ function drawWorld(t){
     for(let i = cell.start; i < cell.start + cell.count; i++){
       const s = starsAll[i];
       const sx = s.x - camX;
-      if(sx < -30 || sx > W + 30) continue;
+      const sy = s.y - camY;
+      if(sx < -30 || sx > W + 30 || sy < -30 || sy > H + 30) continue;
       const isSeen = seen.has(s.i);
       const hov = hoveredIdx === s.i;
       const r = s.r*(hov ? 1.35 : 1);
@@ -598,13 +598,13 @@ function drawWorld(t){
 
       ctx.globalAlpha = worldAlpha*tw;
       const halo = r*5;
-      ctx.drawImage(isSeen ? haloViolet : haloGold, sx - halo/2, s.y - halo/2, halo, halo);
+      ctx.drawImage(isSeen ? haloViolet : haloGold, sx - halo/2, sy - halo/2, halo, halo);
       ctx.fillStyle = isSeen ? '#cdb9ff' : '#fff7e0';
-      drawStarShape(sx, s.y, r);
+      drawStarShape(sx, sy, r);
 
       ctx.globalAlpha = worldAlpha*(hov ? 0.95 : 0.55);
       ctx.fillStyle = isSeen ? 'rgb(205,185,255)' : 'rgb(243,227,184)';
-      ctx.fillText(labelOf(s.i), sx, s.y + r + 13);
+      ctx.fillText(labelOf(s.i), sx, sy + r + 13);
     }
   }
 
@@ -615,6 +615,7 @@ function drawWorld(t){
     }else{
       const s = starsAll[pulse.i];
       const sx = s.x - camX;
+      const sy = s.y - camY;
       ctx.lineWidth = 1.5;
       for(let k = 0; k < 3; k++){
         const p = ((el - k*350)/1600);
@@ -622,7 +623,7 @@ function drawWorld(t){
         ctx.globalAlpha = worldAlpha*(1 - p)*0.85;
         ctx.strokeStyle = '#fff7e0';
         ctx.beginPath();
-        ctx.arc(sx, s.y, 14 + p*48, 0, Math.PI*2);
+        ctx.arc(sx, sy, 14 + p*48, 0, Math.PI*2);
         ctx.stroke();
       }
     }
@@ -630,34 +631,50 @@ function drawWorld(t){
   ctx.restore();
 }
 
-/* ---------- camera: drag, inertia, wheel, keys, animated pans ---------- */
+/* ---------- camera: free drag in every direction, inertia, wheel, keys, animated pans ---------- */
 let dragging = false;
 let dragId = null;
-let startX = 0, startY = 0, lastX = 0, lastT = 0, moved = 0;
-let vel = 0; // px per ms, positive = camera moves right
+let startX = 0, startY = 0, lastX = 0, lastY = 0, lastT = 0, moved = 0;
+let velX = 0, velY = 0; // px per ms, positive = camera moves right / down
 let panAnim = null;
 let hintGone = false;
 
-function setCam(v){
-  const c = clamp(v, 0, maxCam);
-  if(c !== v) vel = 0;
-  camX = c;
+function setCam(x, y){
+  const cxn = clamp(x, 0, maxCamX);
+  const cyn = clamp(y, 0, maxCamY);
+  if(cxn !== x) velX = 0;
+  if(cyn !== y) velY = 0;
+  camX = cxn;
+  camY = cyn;
 }
 
-function panTo(target, dur){
-  panAnim = { from: camX, to: clamp(target, 0, maxCam), t0: performance.now(), dur: dur || 900 };
-  vel = 0;
+function panTo(x, y, dur){
+  panAnim = {
+    fromX: camX, fromY: camY,
+    toX: clamp(x, 0, maxCamX), toY: clamp(y, 0, maxCamY),
+    t0: performance.now(), dur: dur || 900
+  };
+  velX = velY = 0;
+}
+
+function panBy(dx, dy){
+  const baseX = panAnim ? panAnim.toX : camX;
+  const baseY = panAnim ? panAnim.toY : camY;
+  panTo(baseX + dx, baseY + dy, 500);
 }
 
 function stepCamera(t, dt){
   if(panAnim){
     const p = Math.min(1, (t - panAnim.t0)/panAnim.dur);
     const e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3)/2;
-    camX = panAnim.from + (panAnim.to - panAnim.from)*e;
+    camX = panAnim.fromX + (panAnim.toX - panAnim.fromX)*e;
+    camY = panAnim.fromY + (panAnim.toY - panAnim.fromY)*e;
     if(p >= 1) panAnim = null;
-  }else if(!dragging && Math.abs(vel) > 0.01){
-    setCam(camX + vel*dt);
-    vel *= Math.pow(0.94, dt/16.67);
+  }else if(!dragging && (Math.abs(velX) > 0.01 || Math.abs(velY) > 0.01)){
+    setCam(camX + velX*dt, camY + velY*dt);
+    const decay = Math.pow(0.94, dt/16.67);
+    velX *= decay;
+    velY *= decay;
   }
 }
 
@@ -667,7 +684,7 @@ function hitTest(px, py, radius){
     if(!cellVisible(cell, 0)) continue;
     for(let i = cell.start; i < cell.start + cell.count; i++){
       const s = starsAll[i];
-      const d = Math.hypot(s.x - camX - px, s.y - py);
+      const d = Math.hypot(s.x - camX - px, s.y - camY - py);
       if(d < bestD){ bestD = d; best = s.i; }
     }
   }
@@ -680,10 +697,10 @@ canvas.addEventListener('pointerdown', (e) => {
   try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
   dragging = true;
   startX = lastX = e.clientX;
-  startY = e.clientY;
+  startY = lastY = e.clientY;
   lastT = performance.now();
   moved = 0;
-  vel = 0;
+  velX = velY = 0;
   panAnim = null;
   canvas.classList.add('grabbing');
 });
@@ -692,11 +709,14 @@ canvas.addEventListener('pointermove', (e) => {
   if(dragging && e.pointerId === dragId){
     const now = performance.now();
     const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
     const dt = Math.max(1, now - lastT);
-    setCam(camX - dx);
+    setCam(camX - dx, camY - dy);
     moved = Math.max(moved, Math.hypot(e.clientX - startX, e.clientY - startY));
-    vel = vel*0.6 + (-dx/dt)*0.4;
+    velX = velX*0.6 + (-dx/dt)*0.4;
+    velY = velY*0.6 + (-dy/dt)*0.4;
     lastX = e.clientX;
+    lastY = e.clientY;
     lastT = now;
     if(moved > 20) hintGone = true;
   }else if(e.pointerType === 'mouse' && worldReady && !readerOpen && !listOpen){
@@ -713,12 +733,12 @@ function endDrag(e){
   try{ canvas.releasePointerCapture(e.pointerId); }catch(_){}
   const quick = performance.now() - lastT;
   if(e.type === 'pointerup' && moved < 8){
-    vel = 0;
+    velX = velY = 0;
     const radius = e.pointerType === 'mouse' ? 24 : 32;
     const i = hitTest(e.clientX, e.clientY, radius);
     if(i >= 0) openReader(starsAll[i]);
   }else if(quick > 80){
-    vel = 0;
+    velX = velY = 0;
   }
 }
 canvas.addEventListener('pointerup', endDrag);
@@ -731,8 +751,7 @@ canvas.addEventListener('wheel', (e) => {
   if(!worldReady || readerOpen || listOpen) return;
   e.preventDefault();
   panAnim = null;
-  const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-  setCam(camX - d);
+  setCam(camX + e.deltaX, camY + e.deltaY);
   hintGone = true;
 }, { passive: false });
 
@@ -743,35 +762,19 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if(!worldReady || readerOpen || listOpen) return;
-  if(e.key === 'ArrowLeft'){ panTo((panAnim ? panAnim.to : camX) - W*0.7, 500); hintGone = true; }
-  else if(e.key === 'ArrowRight'){ panTo((panAnim ? panAnim.to : camX) + W*0.7, 500); hintGone = true; }
+  const stepX = W*0.7, stepY = H*0.7;
+  if(e.key === 'ArrowLeft') panBy(-stepX, 0);
+  else if(e.key === 'ArrowRight') panBy(stepX, 0);
+  else if(e.key === 'ArrowUp') panBy(0, -stepY);
+  else if(e.key === 'ArrowDown') panBy(0, stepY);
+  else return;
+  e.preventDefault();
+  hintGone = true;
 });
-
-/* ---------- HUD ---------- */
-let hudLast = '';
-function updateHud(){
-  if(!worldReady) return;
-  let text;
-  if(!hintGone){
-    text = 'برای دیدن بقیه‌ی ستاره‌ها بکش';
-  }else{
-    let lo = Infinity, hi = -1;
-    for(const cell of cells){
-      if(!cellVisible(cell, 0)) continue;
-      for(let i = cell.start; i < cell.start + cell.count; i++){
-        const sx = starsAll[i].x - camX;
-        if(sx >= 0 && sx <= W){ if(i < lo) lo = i; if(i > hi) hi = i; }
-      }
-    }
-    text = hi >= 0 ? fa(lo + 1) + ' تا ' + fa(hi + 1) : '';
-  }
-  if(text !== hudLast){ hudText.textContent = text; hudLast = text; }
-  const p = maxCam > 0 ? 1 - camX/maxCam : 0;
-  thumbEl.style.right = (p*86).toFixed(2) + '%';
-}
 
 /* ---------- main loop ---------- */
 let lastFrame = 0;
+let hintHidden = false;
 function drawFrame(t){
   const dt = lastFrame ? Math.min(50, t - lastFrame) : 16;
   lastFrame = t;
@@ -806,19 +809,20 @@ function drawFrame(t){
     }
   }else{
     // slow parallax: the background drifts a little as the sky is dragged
-    const par = -camX*0.1;
+    const parX = -camX*0.1, parY = -camY*0.1;
     for(const s of bgStars){
       const tw = Math.sin(t*s.twSpeed + s.phase)*0.35;
       const a = Math.max(0, Math.min(1, s.baseA + tw));
       const pos = project(s);
-      const x = (((pos.x + par*s.z) % W) + W) % W;
+      const x = (((pos.x + parX*s.z) % W) + W) % W;
+      const y = (((pos.y + parY*s.z) % H) + H) % H;
       ctx.beginPath();
-      ctx.arc(x, pos.y, s.r, 0, Math.PI*2);
+      ctx.arc(x, y, s.r, 0, Math.PI*2);
       ctx.fillStyle = `rgba(243,227,184,${a})`;
       ctx.fill();
     }
     drawWorld(t);
-    updateHud();
+    if(hintGone && !hintHidden){ hudEl.classList.remove('show'); hintHidden = true; }
   }
   requestAnimationFrame(drawFrame);
 }
@@ -869,7 +873,7 @@ function openReader(star){
   readerText.textContent = sentences[star.i];
 
   const dx = (star.x - camX) - cx;
-  const dy = star.y - cy;
+  const dy = (star.y - camY) - cy;
   readerBox.style.transition = 'none';
   readerBox.style.transform = `translate(${dx}px, ${dy}px) scale(0.12)`;
   readerBox.style.opacity = '0';
@@ -986,7 +990,7 @@ function showInSky(){
   const star = starsAll[jumpedNumber - 1];
   closeList();
   hintGone = true;
-  panTo(star.x - W/2, 1200);
+  panTo(star.x - W/2, star.y - H/2, 1200);
   pulse = { i: star.i, t0: performance.now() };
 }
 
