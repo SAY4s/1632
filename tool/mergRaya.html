@@ -1,0 +1,302 @@
+"""
+سایت لوکال ادغام فایل‌های اکسل
+نصب:  py -m pip install pandas openpyxl xlrd
+اجرا: py merge_site.py
+بعد مرورگر خودکار باز می‌شود (http://127.0.0.1:8765). همه‌چیز فقط روی همین کامپیوتر انجام می‌شود.
+برای خاموش کردن: پنجره CMD را ببند یا Ctrl+C بزن.
+"""
+import io
+import json
+import threading
+import warnings
+import webbrowser
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlparse, parse_qs, unquote
+
+import pandas as pd
+
+warnings.simplefilter("ignore")
+
+HOST, PORT = "127.0.0.1", 8765
+EXTS = (".xls", ".xlsx", ".xlsm")
+
+LOCK = threading.Lock()
+STATE = {"files": {}, "result": None}   # files: نام -> بایت‌ها ؛ result: بایت‌های xlsx خروجی
+
+PAGE = r"""<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ادغام فایل‌های اکسل</title>
+<style>
+  :root{--bg:#f4f6fa;--card:#fff;--ink:#1d2433;--mute:#667085;--line:#e1e5ee;--acc:#1f6feb;--acc2:#1558c0;--ok:#16794c;--err:#b42318}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,"Segoe UI",Arial,sans-serif;line-height:1.7}
+  .wrap{max-width:860px;margin:0 auto;padding:28px 16px 60px}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--mute);margin:0 0 20px;font-size:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+  .drop{border:2px dashed #b7c2d6;border-radius:12px;padding:34px 16px;text-align:center;cursor:pointer;transition:.15s;background:#fafbfd}
+  .drop.over{border-color:var(--acc);background:#eef4ff}
+  .drop b{display:block;font-size:16px;margin-bottom:4px}
+  .drop span{color:var(--mute);font-size:13px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  button{font:inherit;border:0;border-radius:8px;padding:9px 18px;cursor:pointer;background:var(--acc);color:#fff}
+  button:hover{background:var(--acc2)}
+  button.ghost{background:#eef1f6;color:var(--ink)}
+  button.ghost:hover{background:#e1e6ef}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--mute)}
+  ul{list-style:none;margin:12px 0 0;padding:0;max-height:260px;overflow:auto}
+  li{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);font-size:14px}
+  li:last-child{border:0}
+  li .n{direction:ltr;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  li .s{color:var(--mute);white-space:nowrap}
+  li .s.ok{color:var(--ok)} li .s.err{color:var(--err)}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .stat{flex:1;min-width:120px;background:#f4f7fc;border-radius:10px;padding:10px 14px}
+  .stat b{display:block;font-size:22px}
+  .stat span{color:var(--mute);font-size:13px}
+  .msg{padding:10px 14px;border-radius:8px;font-size:14px;margin-top:10px}
+  .msg.err{background:#fef3f2;color:var(--err)}
+  .tablewrap{overflow:auto;max-height:300px;border:1px solid var(--line);border-radius:8px;margin-top:12px}
+  table{border-collapse:collapse;font-size:12.5px;width:100%}
+  th,td{border-bottom:1px solid var(--line);padding:5px 9px;white-space:nowrap;text-align:right}
+  th{background:#f4f7fc;position:sticky;top:0}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ادغام فایل‌های اکسل</h1>
+  <p class="sub">فایل‌ها را بکش و رها کن (هر اسمی که دارند). پردازش فقط روی همین کامپیوتر انجام می‌شود.</p>
+
+  <div class="card">
+    <div class="drop" id="drop">
+      <b>فایل‌های اکسل را اینجا رها کن یا برای انتخاب کلیک کن</b>
+      <span>پسوندهای xls ، xlsx ، xlsm — چند فایل را هم‌زمان می‌شود انتخاب کرد</span>
+    </div>
+    <input type="file" id="pick" multiple accept=".xls,.xlsx,.xlsm" hidden>
+    <ul id="list"></ul>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button id="go" disabled>ادغام کن</button>
+      <button class="ghost" id="clear" disabled>پاک کردن لیست</button>
+      <label class="chk"><input type="checkbox" id="src" checked> افزودن ستون «فایل مبدا»</label>
+    </div>
+    <div class="msg err" id="err" hidden></div>
+  </div>
+
+  <div class="card" id="resCard" hidden>
+    <div class="stats">
+      <div class="stat"><b id="sFiles">0</b><span>فایل ادغام‌شده</span></div>
+      <div class="stat"><b id="sRows">0</b><span>تعداد ردیف</span></div>
+      <div class="stat"><b id="sCols">0</b><span>تعداد ستون</span></div>
+    </div>
+    <div class="row"><button id="dl">دانلود merged.xlsx</button></div>
+    <div id="colWarn" class="msg err" hidden></div>
+    <div class="tablewrap"><table id="prev"></table></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let items = [];   // {file, status, note}
+
+function render(){
+  $('list').innerHTML = items.map(it =>
+    `<li><span class="n">${esc(it.file.name)}</span><span class="s ${it.cls||''}">${esc(it.note||'')}</span></li>`).join('');
+  $('go').disabled = !items.length;
+  $('clear').disabled = !items.length;
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function add(files){
+  for(const f of files){
+    if(!/\.(xls|xlsx|xlsm)$/i.test(f.name) || f.name.startsWith('~$')) continue;
+    if(items.some(i=>i.file.name===f.name && i.file.size===f.size)) continue;
+    items.push({file:f, note:(f.size/1024).toFixed(0)+' KB'});
+  }
+  render();
+}
+const drop = $('drop');
+drop.onclick = ()=>$('pick').click();
+$('pick').onchange = e=>{add(e.target.files); e.target.value='';};
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>add(e.dataTransfer.files));
+// جلوگیری از باز شدن فایل در مرورگر اگر خارج از کادر رها شود
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>e.preventDefault());
+
+$('clear').onclick = async ()=>{
+  items=[]; render(); $('resCard').hidden=true; $('err').hidden=true;
+  await fetch('/reset',{method:'POST'});
+};
+
+$('go').onclick = async ()=>{
+  $('err').hidden=true; $('resCard').hidden=true;
+  $('go').disabled=true; $('clear').disabled=true;
+  await fetch('/reset',{method:'POST'});
+  for(const it of items){
+    it.note='در حال ارسال…'; it.cls=''; render();
+    try{
+      const r = await fetch('/upload?name='+encodeURIComponent(it.file.name),{method:'POST',body:it.file});
+      if(!r.ok) throw new Error(await r.text());
+      it.note='آماده'; it.cls='ok';
+    }catch(e){ it.note='خطا'; it.cls='err'; }
+    render();
+  }
+  {
+    $('go').textContent='در حال ادغام…';
+    try{
+      const r = await fetch('/merge?source='+($('src').checked?1:0),{method:'POST'});
+      const j = await r.json();
+      if(!r.ok) throw new Error(j.error||'خطای نامشخص');
+      for(const it of items){
+        const info = j.files[it.file.name];
+        if(!info) continue;
+        if(info.error){ it.note='رد شد: '+info.error; it.cls='err'; }
+        else { it.note=info.rows+' ردیف'; it.cls='ok'; }
+      }
+      render();
+      $('sFiles').textContent=j.ok_files; $('sRows').textContent=j.rows; $('sCols').textContent=j.cols;
+      $('colWarn').hidden = !j.extra_cols.length;
+      if(j.extra_cols.length) $('colWarn').textContent='توجه: ستون‌هایی که همه فایل‌ها ندارند: '+j.extra_cols.join('، ');
+      $('prev').innerHTML = '<tr>'+j.columns.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>' +
+        j.preview.map(r=>'<tr>'+r.map(v=>`<td>${esc(v)}</td>`).join('')+'</tr>').join('');
+      $('resCard').hidden=false;
+    }catch(e){ $('err').textContent=e.message; $('err').hidden=false; }
+  }
+  $('go').textContent='ادغام کن'; $('go').disabled=false; $('clear').disabled=false;
+};
+$('dl').onclick = ()=>{ location.href='/download'; };
+render();
+</script>
+</body>
+</html>
+"""
+
+
+def do_merge(add_source):
+    files = STATE["files"]
+    if not files:
+        raise ValueError("هیچ فایلی ارسال نشده است.")
+    frames, report = [], {}
+    for name in sorted(files):
+        try:
+            sheets = pd.read_excel(io.BytesIO(files[name]), sheet_name=None, dtype=str)
+        except Exception as e:
+            report[name] = {"error": str(e)[:120]}
+            continue
+        n = 0
+        for _, df in sheets.items():
+            df = df.dropna(how="all")
+            if df.empty:
+                continue
+            df.columns = [str(c).strip() for c in df.columns]
+            if add_source:
+                df["فایل مبدا"] = name
+            frames.append(df)
+            n += len(df)
+        report[name] = {"rows": n}
+    if not frames:
+        raise ValueError("در فایل‌ها داده‌ای پیدا نشد.")
+
+    merged = pd.concat(frames, ignore_index=True, sort=False)
+
+    # ستون‌هایی که همه فایل‌ها ندارند (برای هشدار)
+    colsets = [set(f.columns) - {"فایل مبدا"} for f in frames]
+    common = set.intersection(*colsets)
+    extra = [c for c in merged.columns if c != "فایل مبدا" and c not in common]
+
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as w:
+        merged.to_excel(w, index=False, sheet_name="Merged")
+        w.sheets["Merged"].sheet_view.rightToLeft = True
+    STATE["result"] = buf.getvalue()
+
+    prev = merged.head(8).fillna("")
+    return {
+        "ok_files": sum(1 for v in report.values() if "rows" in v),
+        "rows": int(len(merged)),
+        "cols": int(len(merged.columns)),
+        "files": report,
+        "extra_cols": extra,
+        "columns": [str(c) for c in prev.columns],
+        "preview": prev.astype(str).values.tolist(),
+    }
+
+
+class Handler(BaseHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+
+    def _send(self, code, body, ctype="application/json; charset=utf-8", extra=None):
+        if isinstance(body, str):
+            body = body.encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        for k, v in (extra or {}).items():
+            self.send_header(k, v)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        path = urlparse(self.path).path
+        if path == "/":
+            self._send(200, PAGE, "text/html; charset=utf-8")
+        elif path == "/download":
+            with LOCK:
+                data = STATE["result"]
+            if not data:
+                self._send(404, "نتیجه‌ای وجود ندارد", "text/plain; charset=utf-8")
+            else:
+                self._send(200, data,
+                           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                           {"Content-Disposition": 'attachment; filename="merged.xlsx"'})
+        else:
+            self._send(404, "not found", "text/plain")
+
+    def do_POST(self):
+        u = urlparse(self.path)
+        q = parse_qs(u.query)
+        if u.path == "/reset":
+            with LOCK:
+                STATE["files"].clear()
+                STATE["result"] = None
+            self._send(200, "{}")
+        elif u.path == "/upload":
+            name = unquote(q.get("name", [""])[0])
+            n = int(self.headers.get("Content-Length", 0))
+            data = self.rfile.read(n)
+            if not name.lower().endswith(EXTS):
+                self._send(400, "پسوند پشتیبانی نمی‌شود", "text/plain; charset=utf-8")
+                return
+            with LOCK:
+                STATE["files"][name] = data
+            self._send(200, "{}")
+        elif u.path == "/merge":
+            try:
+                with LOCK:
+                    res = do_merge(q.get("source", ["1"])[0] == "1")
+                self._send(200, json.dumps(res, ensure_ascii=False))
+            except Exception as e:
+                self._send(400, json.dumps({"error": str(e)}, ensure_ascii=False))
+        else:
+            self._send(404, "{}")
+
+
+if __name__ == "__main__":
+    srv = ThreadingHTTPServer((HOST, PORT), Handler)
+    url = f"http://{HOST}:{PORT}"
+    print("سایت آماده است:", url)
+    print("برای خاموش کردن این پنجره را ببند یا Ctrl+C بزن.")
+    threading.Timer(0.8, lambda: webbrowser.open(url)).start()
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        pass
